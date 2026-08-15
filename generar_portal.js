@@ -70,6 +70,29 @@ function leerCsv(csvPath) {
   });
 }
 
+const NOMBRES_MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+function nombreMes(slug) {
+  const [y, m] = slug.split('-');
+  return NOMBRES_MES[parseInt(m, 10) - 1] + ' ' + y;
+}
+
+// El "mes" del informe se toma de partition_date del CSV (la fecha del snapshot
+// de datos), no de la fecha del sistema, igual que en Supervisor.
+function obtenerSlugDesdeCsv(rows) {
+  const pd = (rows[0] && rows[0]['partition_date']) || '';
+  if (/^\d{4}-\d{2}/.test(pd)) return pd.slice(0, 7);
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function listarMesesExistentes(carpeta) {
+  const re = /^index_(\d{4}-\d{2})\.html$/;
+  return fs.readdirSync(carpeta)
+    .map((f) => f.match(re))
+    .filter(Boolean)
+    .map((m) => m[1]);
+}
+
 // Solo se usa para calcular la clave de 4 digitos; el resultado (soloDigitos)
 // nunca identifica por si solo a una persona.
 function ultimos4DigitosRut(r) {
@@ -222,6 +245,15 @@ async function main() {
   console.log('CSV Repetido Reparado:', csvReincidencias);
   console.log('CSV Averias de Infancia:', csvInfancia);
 
+  const periodoSlug = obtenerSlugDesdeCsv(leerCsv(csvReincidencias));
+  const slugsExistentes = new Set(listarMesesExistentes(carpeta));
+  slugsExistentes.add(periodoSlug);
+  const archivos = [...slugsExistentes].sort().reverse().map((s) => ({
+    slug: s,
+    label: nombreMes(s),
+    url: s === periodoSlug ? 'index.html' : `index_${s}.html`,
+  }));
+
   const reincidencias = analizarReincidencias(csvReincidencias);
   const infancia = analizarInfancia(csvInfancia);
 
@@ -302,6 +334,8 @@ async function main() {
 
   const DATA = {
     generadoEl: new Date().toLocaleString('es-CL'),
+    periodoSlug,
+    archivos,
     metaReincidencias: +(META_REINCIDENCIA * 100).toFixed(0),
     metaInfancia: +(META_INFANCIA * 100).toFixed(1),
     promedioEquipoReincidencias: reincidencias.promedioEquipo != null ? +(reincidencias.promedioEquipo * 100).toFixed(1) : null,
@@ -311,7 +345,15 @@ async function main() {
 
   const html = generarHtml(DATA);
   fs.writeFileSync(path.join(carpeta, 'index.html'), html, 'utf8');
-  console.log('Portal generado:', path.join(carpeta, 'index.html'));
+  fs.writeFileSync(path.join(carpeta, `index_${periodoSlug}.html`), html, 'utf8');
+  console.log('Portal generado:', path.join(carpeta, 'index.html'), 'y', `index_${periodoSlug}.html`);
+
+  fs.writeFileSync(
+    path.join(carpeta, 'meses.json'),
+    JSON.stringify(archivos),
+    'utf8'
+  );
+  console.log('meses.json generado:', archivos.length, 'mes(es) disponibles');
 
   await generarExcelCredenciales(tecnicos);
 }
@@ -410,6 +452,11 @@ function generarHtml(DATA) {
   .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12.5px; color:var(--celeste); font-weight:800; }
   h1{ margin:0 0 6px; font-size:clamp(24px,4vw,34px); font-weight:800; letter-spacing:-0.01em; color:var(--cobra-navy); }
   .subtitle{ color:#3a4a5c; font-size:14.5px; max-width:640px; line-height:1.55; }
+  .archive-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:16px; }
+  .archive-row .archive-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--text-dim); margin-right:2px; }
+  .archive-pill{ display:inline-block; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border); color:var(--cobra-navy); background:#fff; transition:background .15s ease; }
+  .archive-pill:hover{ background:var(--celeste-soft); }
+  .archive-pill.current{ background:var(--cobra-navy); color:#fff; border-color:var(--cobra-navy); cursor:default; }
   main{ padding:36px 6vw 80px; max-width:760px; margin:0 auto; }
   .panel{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px 24px; box-shadow:0 4px 14px rgba(20,50,80,.05); }
 
@@ -488,6 +535,7 @@ function generarHtml(DATA) {
   </div>
   <h1 id="heroTitle">Mis Indicadores</h1>
   <div class="subtitle" id="heroSubtitle">Aca puedes ver, de forma simple, como te fue este mes y en que puedes enfocarte para mejorar.</div>
+  <div class="archive-row" id="archiveRow"></div>
 </header>
 
 <main>
@@ -536,6 +584,22 @@ function normalizarTexto(s) {
 function titleCase(s) { return (s || '').split(' ').map(w => w ? w[0] + w.slice(1).toLowerCase() : w).join(' '); }
 
 document.getElementById('footerText').innerHTML = 'Generado ' + DATA.generadoEl + ' · Portal de Tecnicos COBRA';
+
+// ---- Historial de meses ----
+function renderArchiveRow(lista) {
+  if (!lista || lista.length < 2) return;
+  const pills = lista.map(a =>
+    a.slug === DATA.periodoSlug
+      ? '<span class="archive-pill current">' + a.label + '</span>'
+      : '<a class="archive-pill" href="' + a.url + '">' + a.label + '</a>'
+  ).join('');
+  document.getElementById('archiveRow').innerHTML = '<span class="archive-label">📁 Meses disponibles:</span>' + pills;
+}
+renderArchiveRow(DATA.archivos);
+fetch('meses.json', { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : null)
+  .then(lista => { if (lista) renderArchiveRow(lista); })
+  .catch(() => {});
 
 function estado(tasa, meta) {
   if (tasa <= meta) return { emoji: '✅', texto: 'Cumples la meta', clase: 'ok' };

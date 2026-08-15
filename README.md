@@ -14,13 +14,21 @@ sin servidor).
 
 ```
 portal-tecnicos/
-├── index.html                         ← pagina publicada (login + vista personal)
-├── generar_portal.js                  ← genera index.html a partir de los CSV en ..\bbdd\
+├── index.html                         ← pagina publicada, siempre el mes actual
+├── index_2026-08.html, ...            ← copia archivada de cada mes (historial)
+├── meses.json                         ← lista de meses disponibles para el selector
+├── generar_portal.js                  ← genera todo lo anterior a partir de los CSV en ..\bbdd\
 ├── Credenciales_Tecnicos_NO_SUBIR.xlsx ← usuario/clave de cada tecnico (SOLO local, no se sube)
 ├── manifest.json, sw.js, icon-*.png   ← PWA (instalable en el celular)
 ├── logo-cobra.png
 └── .gitignore
 ```
+
+El mes se toma de `partition_date` dentro del CSV (la fecha del snapshot de
+datos), no de la fecha del sistema. Cada corrida deja una copia fechada
+ademas de actualizar `index.html`, y aparece un selector "📁 Meses
+disponibles" en la pagina apenas haya 2 o mas meses guardados -- igual que
+en "Supervisor".
 
 ## Actualizar
 
