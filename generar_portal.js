@@ -269,7 +269,7 @@ function generarHtml(DATA) {
   :root{
     --bg:#eef1f4; --panel:#ffffff; --panel-2:#f5f7f9; --border:#e0e5ea; --text:#22303f; --text-dim:#6b7a8c;
     --cobra-navy:#003c71; --cobra-blue:#0071ce; --celeste:#29a9e0; --celeste-soft:#e8f6fd;
-    --promotor:#1fa971; --neutro:#e2962e; --detractor:#e2523e;
+    --promotor:#1fa971; --promotor-bg:#e2f6ee; --neutro:#e2962e; --neutro-bg:#fdf1e2; --detractor:#e2523e; --detractor-bg:#fce4e0;
   }
   *{box-sizing:border-box;}
   body{ margin:0; font-family:'Segoe UI', Arial, sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; }
@@ -287,42 +287,69 @@ function generarHtml(DATA) {
   .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12.5px; color:var(--celeste); font-weight:800; }
   h1{ margin:0 0 6px; font-size:clamp(24px,4vw,34px); font-weight:800; letter-spacing:-0.01em; color:var(--cobra-navy); }
   .subtitle{ color:#3a4a5c; font-size:14.5px; max-width:640px; line-height:1.55; }
-  main{ padding:36px 6vw 80px; max-width:900px; margin:0 auto; }
+  main{ padding:36px 6vw 80px; max-width:760px; margin:0 auto; }
   .panel{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px 24px; box-shadow:0 4px 14px rgba(20,50,80,.05); }
 
-  #loginBox{ max-width:380px; margin:40px auto 0; }
-  #loginBox h2{ margin:0 0 6px; font-size:19px; color:var(--cobra-navy); }
-  #loginBox p.desc{ margin:0 0 20px; font-size:13px; color:var(--text-dim); line-height:1.5; }
-  .campo{ margin-bottom:14px; }
+  #loginBox{ max-width:400px; margin:40px auto 0; text-align:center; }
+  #loginBox .icono-login{ font-size:38px; margin-bottom:6px; }
+  #loginBox h2{ margin:0 0 8px; font-size:20px; color:var(--cobra-navy); }
+  #loginBox p.desc{ margin:0 0 22px; font-size:13.5px; color:var(--text-dim); line-height:1.6; }
+  .campo{ margin-bottom:14px; text-align:left; }
   .campo label{ display:block; font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
-  .campo input{ width:100%; padding:11px 13px; border:1px solid var(--border); border-radius:8px; font-size:15px; font-family:inherit; }
+  .campo input{ width:100%; padding:12px 13px; border:1px solid var(--border); border-radius:8px; font-size:16px; font-family:inherit; }
   .campo input:focus{ outline:2px solid var(--celeste); border-color:var(--celeste); }
-  .campo .ayuda{ font-size:11.5px; color:var(--text-dim); margin-top:4px; }
-  #loginBtn{ width:100%; padding:12px; border:none; border-radius:8px; background:var(--cobra-navy); color:#fff; font-size:14.5px; font-weight:700; font-family:inherit; cursor:pointer; margin-top:6px; }
+  .campo .ayuda{ font-size:11.5px; color:var(--text-dim); margin-top:4px; text-align:left; }
+  #loginBtn{ width:100%; padding:13px; border:none; border-radius:8px; background:var(--cobra-navy); color:#fff; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-top:8px; }
   #loginBtn:hover{ background:var(--cobra-blue); }
-  #loginError{ display:none; background:rgba(226,82,62,.1); color:var(--detractor); border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:14px; }
+  #loginError{ display:none; background:var(--detractor-bg); color:var(--detractor); border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:14px; text-align:left; }
 
   #appBox{ display:none; }
-  .top-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:6px; }
+  .top-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
   #logoutBtn{ background:none; border:1px solid var(--border); color:var(--cobra-navy); padding:8px 14px; border-radius:20px; font-size:12.5px; font-weight:700; font-family:inherit; cursor:pointer; white-space:nowrap; }
   #logoutBtn:hover{ background:var(--panel-2); }
-  .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin:18px 0 28px; }
-  .kpi-card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
-  .kpi-card .label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); font-weight:700; margin-bottom:6px; }
-  .kpi-card .value{ font-size:26px; font-weight:800; color:var(--cobra-navy); }
-  .kpi-card .sub{ font-size:11.5px; color:var(--text-dim); margin-top:4px; }
+  .intro-personal{ font-size:14px; color:var(--text-dim); line-height:1.6; margin:4px 0 22px; }
 
-  .report-section{ margin-bottom:22px; }
-  .report-section h2{ font-size:16.5px; color:var(--cobra-navy); margin:0 0 4px; }
-  .report-section .meta-desc{ font-size:12.5px; color:var(--text-dim); margin:0 0 14px; }
-  .badge{ display:inline-block; padding:3px 11px; border-radius:20px; font-size:12.5px; font-weight:700; }
-  .badge.hi{ background:rgba(31,169,113,.12); color:var(--promotor); }
-  .badge.mid{ background:rgba(226,150,46,.14); color:var(--neutro); }
-  .badge.lo{ background:rgba(226,82,62,.12); color:var(--detractor); }
-  .fila-dato{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--panel-2); font-size:13.5px; }
-  .fila-dato:last-child{ border-bottom:none; }
+  .resumen-general{ display:flex; align-items:center; gap:16px; padding:20px 22px; border-radius:14px; margin-bottom:24px; border:1px solid var(--border); }
+  .resumen-general.ok{ background:var(--promotor-bg); border-color:rgba(31,169,113,.3); }
+  .resumen-general.warn{ background:var(--neutro-bg); border-color:rgba(226,150,46,.3); }
+  .resumen-general.bad{ background:var(--detractor-bg); border-color:rgba(226,82,62,.3); }
+  .resumen-general .emoji{ font-size:34px; flex-shrink:0; }
+  .resumen-general .texto b{ display:block; font-size:16px; margin-bottom:2px; }
+  .resumen-general.ok .texto b{ color:var(--promotor); }
+  .resumen-general.warn .texto b{ color:var(--neutro); }
+  .resumen-general.bad .texto b{ color:var(--detractor); }
+  .resumen-general .texto span{ font-size:13px; color:var(--text-dim); }
+
+  .report-card{ margin-bottom:22px; }
+  .report-card .cabecera{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .report-card .cabecera .icono{ font-size:22px; }
+  .report-card .cabecera h2{ font-size:17px; color:var(--cobra-navy); margin:0; }
+  .report-card .explica{ font-size:13px; color:var(--text-dim); margin:0 0 16px; line-height:1.55; }
+  .estado-pill{ display:inline-flex; align-items:center; gap:6px; padding:5px 13px; border-radius:20px; font-size:13px; font-weight:700; margin-bottom:14px; }
+  .estado-pill.ok{ background:var(--promotor-bg); color:var(--promotor); }
+  .estado-pill.warn{ background:var(--neutro-bg); color:var(--neutro); }
+  .estado-pill.bad{ background:var(--detractor-bg); color:var(--detractor); }
+
+  .barra-wrap{ margin:10px 0 16px; }
+  .barra-track{ position:relative; height:22px; background:var(--panel-2); border-radius:11px; overflow:visible; }
+  .barra-fill{ position:absolute; left:0; top:0; bottom:0; border-radius:11px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; }
+  .barra-fill span{ font-size:11.5px; font-weight:800; color:#fff; white-space:nowrap; }
+  .barra-fill.ok{ background:var(--promotor); }
+  .barra-fill.warn{ background:var(--neutro); }
+  .barra-fill.bad{ background:var(--detractor); }
+  .barra-meta{ position:absolute; top:-4px; bottom:-4px; width:2px; background:#334; }
+  .barra-meta-label{ position:absolute; top:-18px; font-size:10.5px; color:var(--text-dim); transform:translateX(-50%); white-space:nowrap; }
+
+  .frase-clave{ font-size:14.5px; line-height:1.6; margin:0 0 14px; }
+  .frase-clave b{ color:var(--cobra-navy); }
+
+  .detalle-toggle{ font-size:12.5px; color:var(--celeste); font-weight:700; cursor:pointer; user-select:none; display:inline-flex; align-items:center; gap:4px; margin-top:6px; }
+  .detalle-body{ display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--panel-2); }
+  .detalle-body.abierto{ display:block; }
+  .fila-dato{ display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:13px; }
   .fila-dato .k{ color:var(--text-dim); }
   .fila-dato .v{ font-weight:700; color:var(--text); text-align:right; }
+
   .callout{ border-left:3px solid var(--celeste); background:linear-gradient(90deg, var(--celeste-soft), transparent); padding:12px 16px; border-radius:0 10px 10px 0; font-size:13px; color:#2c3e50; line-height:1.55; margin-top:14px; }
   .sin-datos{ color:var(--text-dim); font-size:13.5px; font-style:italic; }
   footer{ text-align:center; padding:26px; color:var(--text-dim); font-size:11.5px; }
@@ -337,24 +364,25 @@ function generarHtml(DATA) {
     <div class="eyebrow">Portal de Tecnicos</div>
   </div>
   <h1 id="heroTitle">Mis Indicadores</h1>
-  <div class="subtitle" id="heroSubtitle">Ingresa con tu nombre para ver tu tasa de Repetido Reparado y de Averias de Infancia.</div>
+  <div class="subtitle" id="heroSubtitle">Aca puedes ver, de forma simple, como te fue este mes y en que puedes enfocarte para mejorar.</div>
 </header>
 
 <main>
   <div id="loginBox" class="panel">
-    <h2>Iniciar sesion</h2>
-    <p class="desc">Usuario: tu primer nombre y primer apellido. Clave: los ultimos 4 digitos de tu RUT.</p>
+    <div class="icono-login">👋</div>
+    <h2>Bienvenido</h2>
+    <p class="desc">Ingresa con tu nombre y tu clave para ver tu reporte personal. Nadie mas puede ver tu informacion.</p>
     <div id="loginError"></div>
     <div class="campo">
       <label for="inputNombre">Nombre y apellido</label>
-      <input type="text" id="inputNombre" placeholder="Marcos Aguilar" autocomplete="username">
+      <input type="text" id="inputNombre" placeholder="Ej: Marcos Aguilar" autocomplete="username">
     </div>
     <div class="campo">
-      <label for="inputPass">Clave</label>
-      <input type="password" id="inputPass" placeholder="4028" autocomplete="current-password" inputmode="numeric" maxlength="4">
+      <label for="inputPass">Clave (4 numeros)</label>
+      <input type="password" id="inputPass" placeholder="••••" autocomplete="current-password" inputmode="numeric" maxlength="4">
       <div class="ayuda">Son los ultimos 4 digitos de tu RUT.</div>
     </div>
-    <button id="loginBtn">Entrar</button>
+    <button id="loginBtn">Ver mi reporte</button>
   </div>
 
   <div id="appBox">
@@ -365,11 +393,12 @@ function generarHtml(DATA) {
       </div>
       <button id="logoutBtn">Cerrar sesion</button>
     </div>
+    <p class="intro-personal">Este es tu reporte personal de calidad. Te mostramos como te fue este mes con tus reparaciones, y en que puedes enfocarte para mejorar.</p>
 
-    <div class="kpi-grid" id="kpiGrid"></div>
+    <div id="resumenGeneral"></div>
 
-    <div class="report-section panel" id="seccionReincidencias"></div>
-    <div class="report-section panel" id="seccionInfancia"></div>
+    <div class="report-card panel" id="seccionReincidencias"></div>
+    <div class="report-card panel" id="seccionInfancia"></div>
   </div>
 </main>
 
@@ -381,65 +410,123 @@ const DATA = ${JSON.stringify(DATA)};
 function normalizarTexto(s) {
   return (s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/\\s+/g, ' ').trim().toUpperCase();
 }
-function npsClass(tasa, meta) { return tasa <= meta ? 'hi' : (tasa <= meta * 2 ? 'mid' : 'lo'); }
 function titleCase(s) { return (s || '').split(' ').map(w => w ? w[0] + w.slice(1).toLowerCase() : w).join(' '); }
 
 document.getElementById('footerText').innerHTML = 'Generado ' + DATA.generadoEl + ' · Portal de Tecnicos COBRA';
 
-function bloqueReporte(titulo, meta, promedioEquipo, datos, formulaTexto) {
+function estado(tasa, meta) {
+  if (tasa <= meta) return { emoji: '✅', texto: 'Vas muy bien', clase: 'ok' };
+  if (tasa <= meta * 1.5) return { emoji: '⚠️', texto: 'Estas cerca del limite', clase: 'warn' };
+  return { emoji: '🔴', texto: 'Necesitas mejorar', clase: 'bad' };
+}
+
+function barraTasa(tasa, meta, cls) {
+  const escala = Math.max(tasa, meta * 2, 5) * 1.15;
+  const anchoTasa = Math.min(100, (tasa / escala) * 100);
+  const posMeta = Math.min(100, (meta / escala) * 100);
+  return '<div class="barra-wrap">'
+    + '<div class="barra-track">'
+    + '<div class="barra-fill ' + cls + '" style="width:' + anchoTasa.toFixed(1) + '%"><span>' + tasa + '%</span></div>'
+    + '<div class="barra-meta" style="left:' + posMeta.toFixed(1) + '%"></div>'
+    + '<div class="barra-meta-label" style="left:' + posMeta.toFixed(1) + '%">Meta ' + meta + '%</div>'
+    + '</div></div>';
+}
+
+let contadorDetalle = 0;
+
+function bloqueReporte(opts) {
+  const { icono, titulo, explicacion, meta, promedioEquipo, datos, fraseFormula } = opts;
   if (!datos) {
-    return '<h2>' + titulo + '</h2><p class="sin-datos">No hay registros para ti en este informe en el periodo actual.</p>';
+    return '<div class="cabecera"><span class="icono">' + icono + '</span><h2>' + titulo + '</h2></div>'
+      + '<p class="sin-datos">No hay registros para ti en este informe en el periodo actual.</p>';
   }
-  const tasaTxt = datos.tasa + '%';
-  const cls = npsClass(datos.tasa, meta);
-  const cumpleTxt = datos.tasa <= meta ? 'Cumple la meta' : 'No cumple la meta';
-  let html = '<h2>' + titulo + '</h2>';
-  html += '<p class="meta-desc">' + formulaTexto + '</p>';
-  html += '<div class="fila-dato"><span class="k">Tu tasa</span><span class="v"><span class="badge ' + cls + '">' + tasaTxt + '</span></span></div>';
-  html += '<div class="fila-dato"><span class="k">Meta institucional</span><span class="v">' + meta + '% · ' + cumpleTxt + '</span></div>';
-  if (promedioEquipo != null) {
-    html += '<div class="fila-dato"><span class="k">Promedio del equipo</span><span class="v">' + promedioEquipo + '%</span></div>';
-  }
+  const est = estado(datos.tasa, meta);
+  const deCada100 = Math.round(datos.tasa);
+  const compEquipo = promedioEquipo != null
+    ? (datos.tasa <= promedioEquipo
+        ? 'Eso es mejor que el promedio del equipo (' + promedioEquipo + '%).'
+        : 'El promedio del equipo es ' + promedioEquipo + '%, un poco mejor que tu numero.')
+    : '';
+  let rankingFrase = '';
   if (datos.ranking) {
-    html += '<div class="fila-dato"><span class="k">Tu posicion en el ranking</span><span class="v">' + datos.ranking + ' de ' + datos.rankingTotal + '</span></div>';
+    const enBuenLugar = datos.ranking <= Math.ceil(datos.rankingTotal / 3);
+    rankingFrase = 'Estas en el puesto <b>' + datos.ranking + ' de ' + datos.rankingTotal + '</b> tecnicos'
+      + (enBuenLugar ? ', entre los mejores del equipo.' : '.');
   }
+
+  contadorDetalle++;
+  const idDetalle = 'detalle' + contadorDetalle;
+
+  let html = '<div class="cabecera"><span class="icono">' + icono + '</span><h2>' + titulo + '</h2></div>';
+  html += '<p class="explica">' + explicacion + '</p>';
+  html += '<div class="estado-pill ' + est.clase + '">' + est.emoji + ' ' + est.texto + '</div>';
+  html += barraTasa(datos.tasa, meta, est.clase);
+  html += '<p class="frase-clave">De cada 100 ' + fraseFormula + ', <b>' + deCada100 + '</b> tuvieron un problema despues. '
+    + (datos.tasa <= meta ? 'Estas dentro de la meta (' + meta + '%). ' : 'La meta es no superar el ' + meta + '%. ')
+    + compEquipo + '</p>';
+  if (rankingFrase) {
+    html += '<p class="frase-clave">' + rankingFrase + '</p>';
+  }
+  if (datos.causaFrecuente) {
+    html += '<div class="callout">💡 <b>Para mejorar:</b> la mayoria de tus casos con problema fueron por "' + datos.causaFrecuente + '" ('
+      + datos.causaFrecuenteCasos + ' caso' + (datos.causaFrecuenteCasos === 1 ? '' : 's') + '). Poner atencion extra ahi te deberia ayudar a bajar tu numero.</div>';
+  }
+
+  html += '<div class="detalle-toggle" onclick="toggleDetalle(\\'' + idDetalle + '\\')">Ver el detalle en numeros <span id="' + idDetalle + 'Flecha">▾</span></div>';
+  html += '<div class="detalle-body" id="' + idDetalle + '">';
   html += '<div class="fila-dato"><span class="k">Casos totales evaluados</span><span class="v">' + datos.total + '</span></div>';
   html += '<div class="fila-dato"><span class="k">Casos con problema</span><span class="v">' + datos.reincidencias + '</span></div>';
   if (datos.diasPromedio != null) {
     html += '<div class="fila-dato"><span class="k">Dias promedio hasta el problema</span><span class="v">' + datos.diasPromedio + ' dias</span></div>';
   }
   if (datos.mismoPct != null) {
-    html += '<div class="fila-dato"><span class="k">% que tu mismo tuviste que corregir de nuevo</span><span class="v">' + datos.mismoPct + '%</span></div>';
+    html += '<div class="fila-dato"><span class="k">% que tu mismo corregiste de nuevo</span><span class="v">' + datos.mismoPct + '%</span></div>';
   }
-  if (datos.causaFrecuente) {
-    html += '<div class="callout"><b>Tu causa mas frecuente:</b> ' + datos.causaFrecuente + ' (' + datos.causaFrecuenteCasos + ' caso' + (datos.causaFrecuenteCasos === 1 ? '' : 's') + ').</div>';
-  }
+  html += '</div>';
   return html;
 }
+
+function toggleDetalle(id) {
+  const el = document.getElementById(id);
+  const flecha = document.getElementById(id + 'Flecha');
+  const abierto = el.classList.toggle('abierto');
+  flecha.textContent = abierto ? '▴' : '▾';
+}
+window.toggleDetalle = toggleDetalle;
 
 function mostrarPerfil(t) {
   document.getElementById('loginBox').style.display = 'none';
   document.getElementById('appBox').style.display = 'block';
-  document.getElementById('saludo').textContent = 'Hola, ' + titleCase(t.nombre);
+  document.getElementById('saludo').textContent = '👋 Hola, ' + titleCase(t.nombre);
   document.getElementById('agenciaTecnico').textContent = t.agencia ? ('Agencia: ' + titleCase(t.agencia)) : '';
 
-  let kpiHtml = '';
-  if (t.reincidencias) {
-    kpiHtml += '<div class="kpi-card"><div class="label">Repetido Reparado</div><div class="value">' + t.reincidencias.tasa + '%</div><div class="sub">Meta ' + DATA.metaReincidencias + '%</div></div>';
+  const estados = [];
+  if (t.reincidencias) estados.push(estado(t.reincidencias.tasa, DATA.metaReincidencias).clase);
+  if (t.infancia) estados.push(estado(t.infancia.tasa, DATA.metaInfancia).clase);
+  let claseGeneral = 'ok', mensajeGeneral = '🎉 <b>Vas muy bien este mes.</b> <span>Tus dos indicadores estan dentro de la meta. Sigue asi.</span>';
+  if (estados.includes('bad')) {
+    claseGeneral = 'bad';
+    mensajeGeneral = '🔴 <b>Hay puntos importantes que revisar.</b> <span>Mira el detalle abajo para saber en que enfocarte.</span>';
+  } else if (estados.includes('warn')) {
+    claseGeneral = 'warn';
+    mensajeGeneral = '💪 <b>Vas bien, pero hay espacio para mejorar.</b> <span>Estas cerca del limite en algun indicador.</span>';
   }
-  if (t.infancia) {
-    kpiHtml += '<div class="kpi-card"><div class="label">Averias de Infancia</div><div class="value">' + t.infancia.tasa + '%</div><div class="sub">Meta ' + DATA.metaInfancia + '%</div></div>';
-  }
-  document.getElementById('kpiGrid').innerHTML = kpiHtml;
+  const emojiGeneral = claseGeneral === 'ok' ? '🎉' : (claseGeneral === 'warn' ? '💪' : '🔴');
+  document.getElementById('resumenGeneral').innerHTML =
+    '<div class="resumen-general ' + claseGeneral + '"><div class="emoji">' + emojiGeneral + '</div><div class="texto">' + mensajeGeneral + '</div></div>';
 
-  document.getElementById('seccionReincidencias').innerHTML = bloqueReporte(
-    'Repetido Reparado', DATA.metaReincidencias, DATA.promedioEquipoReincidencias, t.reincidencias,
-    'Reparaciones tuyas que volvieron a fallar dentro de 30 dias.'
-  );
-  document.getElementById('seccionInfancia').innerHTML = bloqueReporte(
-    'Averias de Infancia', DATA.metaInfancia, DATA.promedioEquipoInfancia, t.infancia,
-    'Instalaciones tuyas que generaron una reparacion dentro de su periodo de infancia.'
-  );
+  document.getElementById('seccionReincidencias').innerHTML = bloqueReporte({
+    icono: '🔁', titulo: 'Repetido Reparado',
+    explicacion: 'Mide si una reparacion tuya vuelve a fallar antes de 30 dias. Mientras mas bajo, mejor.',
+    meta: DATA.metaReincidencias, promedioEquipo: DATA.promedioEquipoReincidencias, datos: t.reincidencias,
+    fraseFormula: 'reparaciones que hiciste',
+  });
+  document.getElementById('seccionInfancia').innerHTML = bloqueReporte({
+    icono: '🏠', titulo: 'Averias de Infancia',
+    explicacion: 'Mide si una instalacion tuya necesita una reparacion poco despues de instalada. Mientras mas bajo, mejor.',
+    meta: DATA.metaInfancia, promedioEquipo: DATA.promedioEquipoInfancia, datos: t.infancia,
+    fraseFormula: 'instalaciones que hiciste',
+  });
 }
 
 function intentarLogin() {
@@ -448,7 +535,7 @@ function intentarLogin() {
   const errorBox = document.getElementById('loginError');
   const t = DATA.tecnicos[key];
   if (!t || !key || t.clave !== pass) {
-    errorBox.textContent = 'Nombre o clave incorrectos.';
+    errorBox.textContent = 'Nombre o clave incorrectos. Revisa que este bien escrito tu nombre y apellido.';
     errorBox.style.display = 'block';
     return;
   }
