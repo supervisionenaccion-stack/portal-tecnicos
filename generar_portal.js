@@ -386,7 +386,7 @@ function generarHtml(DATA) {
     <div class="campo">
       <label for="inputPass">Clave (4 numeros)</label>
       <input type="password" id="inputPass" placeholder="••••" autocomplete="current-password" inputmode="numeric" maxlength="4">
-      <div class="ayuda">Son los ultimos 4 digitos de tu RUT.</div>
+      <div class="ayuda">Son los ultimos 4 digitos de tu RUT, incluido el digito verificador, sin guion.</div>
     </div>
     <button id="loginBtn">Ver mi reporte</button>
   </div>
