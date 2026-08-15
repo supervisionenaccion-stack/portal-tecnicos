@@ -531,7 +531,7 @@ function mostrarPerfil(t) {
 
 function intentarLogin() {
   const key = normalizarTexto(document.getElementById('inputNombre').value);
-  const pass = (document.getElementById('inputPass').value || '').trim();
+  const pass = (document.getElementById('inputPass').value || '').trim().toUpperCase();
   const errorBox = document.getElementById('loginError');
   const t = DATA.tecnicos[key];
   if (!t || !key || t.clave !== pass) {
