@@ -93,6 +93,14 @@ function loginKey(nombreCompleto) {
   return normalizarTexto(nombre + ' ' + apellido);
 }
 
+// Clave interna de agrupacion (solo en memoria, nunca se publica): el RUT
+// completo normalizado. Se usa para que dos filas de la MISMA persona nunca
+// se separen, y para poder detectar cuando dos personas DISTINTAS compartirian
+// el mismo login (mismo nombre corto).
+function rutInterno(r) {
+  return (r || '').toString().trim().toUpperCase().replace(/\./g, '').replace(/-/g, '');
+}
+
 function mediana(arr) {
   if (arr.length === 0) return null;
   const s = [...arr].sort((a, b) => a - b);
@@ -110,24 +118,24 @@ function analizarReincidencias(csvPath) {
   const reit = rows.filter((r) => (r['rdy_prd_tiene_reitero_30d'] || '').trim() === '1');
   const reitFolios = new Set(reit.map((r) => r['toa_piv_folio_toa']));
 
-  const porKey = {};
+  const porRut = {};
   rows.forEach((r) => {
     const nombre = (r['toa_piv_nombre_tecnico'] || '').trim();
-    if (!nombre) return;
-    const key = loginKey(nombre);
-    if (!porKey[key]) {
-      porKey[key] = {
-        key, nombre, agencia: (r['toa_piv_agencia'] || '').trim(), clave: ultimos4DigitosRut(r['toa_piv_rut_tecnico']),
+    const rut = rutInterno(r['toa_piv_rut_tecnico']);
+    if (!nombre || !rut) return;
+    if (!porRut[rut]) {
+      porRut[rut] = {
+        rut, nombre, agencia: (r['toa_piv_agencia'] || '').trim(), clave: ultimos4DigitosRut(r['toa_piv_rut_tecnico']),
         total: 0, reincidencias: 0, dias: [], causas: {},
       };
     }
-    porKey[key].total += 1;
+    porRut[rut].total += 1;
     if (reitFolios.has(r['toa_piv_folio_toa'])) {
-      porKey[key].reincidencias += 1;
+      porRut[rut].reincidencias += 1;
       const dias = Number(r['rdy_prd_q_dias_reitero']);
-      if (!Number.isNaN(dias)) porKey[key].dias.push(dias);
+      if (!Number.isNaN(dias)) porRut[rut].dias.push(dias);
       const causa = (r['toa_piv_causa'] || '').trim() || '(sin dato)';
-      porKey[key].causas[causa] = (porKey[key].causas[causa] || 0) + 1;
+      porRut[rut].causas[causa] = (porRut[rut].causas[causa] || 0) + 1;
     }
   });
 
@@ -135,20 +143,19 @@ function analizarReincidencias(csvPath) {
   rows.forEach((r) => { byFolio[r['toa_piv_folio_toa']] = r; });
   let mismoTotal = {}, mismoSi = {};
   reit.forEach((r) => {
-    const nombre = (r['toa_piv_nombre_tecnico'] || '').trim();
-    if (!nombre) return;
-    const key = loginKey(nombre);
+    const rut = rutInterno(r['toa_piv_rut_tecnico']);
+    if (!rut || !porRut[rut]) return;
     const r2 = byFolio[r['rdy_prd_reiterado']];
     if (!r2) return;
-    mismoTotal[key] = (mismoTotal[key] || 0) + 1;
-    if (r2['toa_piv_nombre_tecnico'] === r['toa_piv_nombre_tecnico']) mismoSi[key] = (mismoSi[key] || 0) + 1;
+    mismoTotal[rut] = (mismoTotal[rut] || 0) + 1;
+    if (r2['toa_piv_nombre_tecnico'] === r['toa_piv_nombre_tecnico']) mismoSi[rut] = (mismoSi[rut] || 0) + 1;
   });
-  Object.keys(porKey).forEach((k) => {
-    porKey[k].mismoTotal = mismoTotal[k] || 0;
-    porKey[k].mismoSi = mismoSi[k] || 0;
+  Object.keys(porRut).forEach((k) => {
+    porRut[k].mismoTotal = mismoTotal[k] || 0;
+    porRut[k].mismoSi = mismoSi[k] || 0;
   });
 
-  return terminarAnalisis(porKey);
+  return terminarAnalisis(porRut);
 }
 
 // ---------------- Averias de Infancia ----------------
@@ -156,38 +163,38 @@ function analizarInfancia(csvPath) {
   const rows = leerCsv(csvPath);
   const instalaciones = rows.filter((r) => ['A', 'T'].includes((r['vpi_tipo_trabajo_producto'] || '').trim()));
 
-  const porKey = {};
+  const porRut = {};
   instalaciones.forEach((r) => {
     const nombre = (r['toa_provider_name'] || '').trim();
-    if (!nombre) return;
-    const key = loginKey(nombre);
-    if (!porKey[key]) {
-      porKey[key] = {
-        key, nombre, agencia: (r['toa_xa_original_agency'] || '').trim(), clave: ultimos4DigitosRut(r['toa_provider_external_id']),
+    const rut = rutInterno(r['toa_provider_external_id']);
+    if (!nombre || !rut) return;
+    if (!porRut[rut]) {
+      porRut[rut] = {
+        rut, nombre, agencia: (r['toa_xa_original_agency'] || '').trim(), clave: ultimos4DigitosRut(r['toa_provider_external_id']),
         total: 0, reincidencias: 0, dias: [], causas: {}, mismoTotal: 0, mismoSi: 0,
       };
     }
-    porKey[key].total += 1;
+    porRut[rut].total += 1;
     if ((r['infancia'] || '').trim() === '1') {
-      porKey[key].reincidencias += 1;
+      porRut[rut].reincidencias += 1;
       const dias = Number(r['q_dias_infancia']);
-      if (!Number.isNaN(dias)) porKey[key].dias.push(dias);
+      if (!Number.isNaN(dias)) porRut[rut].dias.push(dias);
       const causa = (r['rmdy_causa'] || '').trim() || '(sin dato)';
-      porKey[key].causas[causa] = (porKey[key].causas[causa] || 0) + 1;
-      porKey[key].mismoTotal += 1;
-      if (r['rmdy_nombre_tecnico'] === r['toa_provider_name']) porKey[key].mismoSi += 1;
+      porRut[rut].causas[causa] = (porRut[rut].causas[causa] || 0) + 1;
+      porRut[rut].mismoTotal += 1;
+      if (r['rmdy_nombre_tecnico'] === r['toa_provider_name']) porRut[rut].mismoSi += 1;
     }
   });
 
-  return terminarAnalisis(porKey);
+  return terminarAnalisis(porRut);
 }
 
-function terminarAnalisis(porKey) {
-  const lista = Object.values(porKey).map((t) => {
+function terminarAnalisis(porRut) {
+  const lista = Object.values(porRut).map((t) => {
     const tasa = t.total ? t.reincidencias / t.total : 0;
     const causaFrecuente = Object.entries(t.causas).sort((a, b) => b[1] - a[1])[0];
     return {
-      key: t.key, nombre: t.nombre, agencia: t.agencia, clave: t.clave,
+      rut: t.rut, nombre: t.nombre, agencia: t.agencia, clave: t.clave,
       total: t.total, reincidencias: t.reincidencias, tasa,
       diasPromedio: t.dias.length ? +promedio(t.dias).toFixed(1) : null,
       diasMediana: t.dias.length ? mediana(t.dias) : null,
@@ -204,7 +211,7 @@ function terminarAnalisis(porKey) {
   const promedioEquipo = elegibles.length ? promedio(elegibles.map((t) => t.tasa)) : null;
 
   const mapa = {};
-  lista.forEach((t) => { mapa[t.key] = t; });
+  lista.forEach((t) => { mapa[t.rut] = t; });
   return { mapa, promedioEquipo, totalTecnicos: lista.length };
 }
 
@@ -217,14 +224,16 @@ function main() {
   const reincidencias = analizarReincidencias(csvReincidencias);
   const infancia = analizarInfancia(csvInfancia);
 
-  const keysTodos = new Set([...Object.keys(reincidencias.mapa), ...Object.keys(infancia.mapa)]);
-  console.log('Tecnicos con datos:', keysTodos.size);
+  // Fusion por RUT interno (nunca por nombre): garantiza que dos personas
+  // distintas jamas se mezclen, aunque tengan el mismo nombre corto.
+  const rutsTodos = new Set([...Object.keys(reincidencias.mapa), ...Object.keys(infancia.mapa)]);
+  console.log('Tecnicos con datos:', rutsTodos.size);
 
-  const tecnicos = {};
-  keysTodos.forEach((key) => {
-    const r = reincidencias.mapa[key];
-    const i = infancia.mapa[key];
-    tecnicos[key] = {
+  const personas = [...rutsTodos].map((rut) => {
+    const r = reincidencias.mapa[rut];
+    const i = infancia.mapa[rut];
+    return {
+      rut,
       nombre: (r && r.nombre) || (i && i.nombre) || '',
       agencia: (r && r.agencia) || (i && i.agencia) || '',
       clave: (r && r.clave) || (i && i.clave) || '',
@@ -242,6 +251,53 @@ function main() {
       } : null,
     };
   });
+
+  // Asignar el login (nombre corto) a cada persona. Si dos personas DISTINTAS
+  // comparten el mismo nombre corto, se le agrega " 2", " 3"... a partir de la
+  // segunda (ordenadas por nombre completo, para que el resultado sea estable
+  // entre corridas) y se alerta bien visible para que se le avise al tecnico.
+  const grupos = {};
+  personas.forEach((p) => {
+    const base = loginKey(p.nombre);
+    if (!grupos[base]) grupos[base] = [];
+    grupos[base].push(p);
+  });
+
+  // IMPORTANTE: "rut" solo se usa internamente para fusionar/desambiguar.
+  // Se descarta aqui y nunca se incluye en el objeto publicado.
+  function sinRut(p) {
+    const { rut, ...resto } = p;
+    return resto;
+  }
+
+  const tecnicos = {};
+  const colisiones = [];
+  Object.entries(grupos).forEach(([base, grupo]) => {
+    if (grupo.length === 1) {
+      tecnicos[base] = sinRut(grupo[0]);
+      return;
+    }
+    colisiones.push(base);
+    grupo
+      .sort((a, b) => a.nombre.localeCompare(b.nombre))
+      .forEach((p, i) => {
+        const keyFinal = i === 0 ? base : base + ' ' + (i + 1);
+        tecnicos[keyFinal] = sinRut(p);
+        colisiones.push('   -> ' + p.nombre + '  (login: "' + keyFinal + '")');
+      });
+  });
+
+  if (colisiones.length) {
+    console.log('');
+    console.log('==============================================================');
+    console.log('  ALERTA: nombres de login repetidos (mismo primer nombre +');
+    console.log('  primer apellido) entre tecnicos DISTINTOS. Se les asigno un');
+    console.log('  numero para diferenciarlos. Avisales su login exacto:');
+    console.log('==============================================================');
+    colisiones.forEach((linea) => console.log(linea));
+    console.log('==============================================================');
+    console.log('');
+  }
 
   const DATA = {
     generadoEl: new Date().toLocaleString('es-CL'),
