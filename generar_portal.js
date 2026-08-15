@@ -538,9 +538,9 @@ function titleCase(s) { return (s || '').split(' ').map(w => w ? w[0] + w.slice(
 document.getElementById('footerText').innerHTML = 'Generado ' + DATA.generadoEl + ' · Portal de Tecnicos COBRA';
 
 function estado(tasa, meta) {
-  if (tasa <= meta) return { emoji: '✅', texto: 'Vas muy bien', clase: 'ok' };
-  if (tasa <= meta * 1.5) return { emoji: '⚠️', texto: 'Estas cerca del limite', clase: 'warn' };
-  return { emoji: '🔴', texto: 'Necesitas mejorar', clase: 'bad' };
+  if (tasa <= meta) return { emoji: '✅', texto: 'Cumples la meta', clase: 'ok' };
+  if (tasa <= meta * 1.5) return { emoji: '⚠️', texto: 'Fuera de la meta', clase: 'warn' };
+  return { emoji: '🔴', texto: 'Muy fuera de la meta', clase: 'bad' };
 }
 
 function barraTasa(tasa, meta, cls) {
@@ -565,10 +565,16 @@ function bloqueReporte(opts) {
   }
   const est = estado(datos.tasa, meta);
   const deCada100 = Math.round(datos.tasa);
+  const cumpleFrase = datos.tasa <= meta
+    ? 'Tu tasa (<b>' + datos.tasa + '%</b>) esta dentro de la meta (no superar el ' + meta + '%).'
+    : 'Tu tasa (<b>' + datos.tasa + '%</b>) esta <b>sobre la meta</b> (no debe superar el ' + meta + '%) — te faltan '
+      + (datos.tasa - meta).toFixed(1) + ' puntos para cumplirla.';
   const compEquipo = promedioEquipo != null
     ? (datos.tasa <= promedioEquipo
-        ? 'Eso es mejor que el promedio del equipo (' + promedioEquipo + '%).'
-        : 'El promedio del equipo es ' + promedioEquipo + '%, un poco mejor que tu numero.')
+        ? (datos.tasa <= meta
+            ? ' Ademas, es mejor que el promedio del equipo (' + promedioEquipo + '%).'
+            : ' Aun asi, es mejor que el promedio del equipo (' + promedioEquipo + '%), que tampoco cumple la meta.')
+        : ' El promedio del equipo (' + promedioEquipo + '%) es un poco mejor que tu numero.')
     : '';
   let rankingFrase = '';
   if (datos.ranking) {
@@ -584,9 +590,8 @@ function bloqueReporte(opts) {
   html += '<p class="explica">' + explicacion + '</p>';
   html += '<div class="estado-pill ' + est.clase + '">' + est.emoji + ' ' + est.texto + '</div>';
   html += barraTasa(datos.tasa, meta, est.clase);
-  html += '<p class="frase-clave">De cada 100 ' + fraseFormula + ', <b>' + deCada100 + '</b> tuvieron un problema despues. '
-    + (datos.tasa <= meta ? 'Estas dentro de la meta (' + meta + '%). ' : 'La meta es no superar el ' + meta + '%. ')
-    + compEquipo + '</p>';
+  html += '<p class="frase-clave">De cada 100 ' + fraseFormula + ', <b>' + deCada100 + '</b> tuvieron un problema despues.</p>';
+  html += '<p class="frase-clave">' + cumpleFrase + compEquipo + '</p>';
   if (rankingFrase) {
     html += '<p class="frase-clave">' + rankingFrase + '</p>';
   }
@@ -629,12 +634,12 @@ function mostrarPerfil(t) {
   let claseGeneral = 'ok', mensajeGeneral = '🎉 <b>Vas muy bien este mes.</b> <span>Tus dos indicadores estan dentro de la meta. Sigue asi.</span>';
   if (estados.includes('bad')) {
     claseGeneral = 'bad';
-    mensajeGeneral = '🔴 <b>Hay puntos importantes que revisar.</b> <span>Mira el detalle abajo para saber en que enfocarte.</span>';
+    mensajeGeneral = '🔴 <b>Estas muy fuera de la meta en algun indicador.</b> <span>Mira el detalle abajo para saber en que enfocarte.</span>';
   } else if (estados.includes('warn')) {
     claseGeneral = 'warn';
-    mensajeGeneral = '💪 <b>Vas bien, pero hay espacio para mejorar.</b> <span>Estas cerca del limite en algun indicador.</span>';
+    mensajeGeneral = '⚠️ <b>Estas fuera de la meta en algun indicador.</b> <span>Revisa el detalle abajo para saber en cuanto y en que enfocarte.</span>';
   }
-  const emojiGeneral = claseGeneral === 'ok' ? '🎉' : (claseGeneral === 'warn' ? '💪' : '🔴');
+  const emojiGeneral = claseGeneral === 'ok' ? '🎉' : (claseGeneral === 'warn' ? '⚠️' : '🔴');
   document.getElementById('resumenGeneral').innerHTML =
     '<div class="resumen-general ' + claseGeneral + '"><div class="emoji">' + emojiGeneral + '</div><div class="texto">' + mensajeGeneral + '</div></div>';
 
