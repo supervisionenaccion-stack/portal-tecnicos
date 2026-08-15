@@ -1,0 +1,18 @@
+{
+  "name": "Portal de Tecnicos — COBRA",
+  "short_name": "Portal Tecnicos",
+  "description": "Cada tecnico ve sus propios indicadores de Repetido Reparado y Averias de Infancia.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "background_color": "#eef1f4",
+  "theme_color": "#003c71",
+  "orientation": "portrait-primary",
+  "lang": "es-CL",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
