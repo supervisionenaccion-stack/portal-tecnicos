@@ -15,6 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const ExcelJS = require('exceljs');
 
 const carpeta = __dirname;
 const carpetaBbdd = path.join(carpeta, '..', 'bbdd');
@@ -215,7 +216,7 @@ function terminarAnalisis(porRut) {
   return { mapa, promedioEquipo, totalTecnicos: lista.length };
 }
 
-function main() {
+async function main() {
   const csvReincidencias = encontrarCsv(/^p23-averias-reiteradas.*COBRA.*\.csv$/i);
   const csvInfancia = encontrarCsv(/^p22-Averias-infancia.*COBRA.*\.csv$/i);
   console.log('CSV Repetido Reparado:', csvReincidencias);
@@ -311,6 +312,66 @@ function main() {
   const html = generarHtml(DATA);
   fs.writeFileSync(path.join(carpeta, 'index.html'), html, 'utf8');
   console.log('Portal generado:', path.join(carpeta, 'index.html'));
+
+  await generarExcelCredenciales(tecnicos);
+}
+
+// Excel SOLO local (esta en .gitignore, nunca se sube a GitHub) con el
+// listado de usuario/clave de cada tecnico, para que se los puedas repartir.
+async function generarExcelCredenciales(tecnicos) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Portal de Tecnicos';
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet('Credenciales', { views: [{ state: 'frozen', ySplit: 1 }] });
+  ws.columns = [
+    { header: 'Nombre completo', key: 'nombre', width: 34 },
+    { header: 'Agencia', key: 'agencia', width: 16 },
+    { header: 'Usuario (nombre a ingresar)', key: 'usuario', width: 28 },
+    { header: 'Clave', key: 'clave', width: 12 },
+  ];
+
+  Object.entries(tecnicos)
+    .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre))
+    .forEach(([usuario, t]) => {
+      ws.addRow({ nombre: t.nombre, agencia: t.agencia, usuario, clave: t.clave });
+    });
+
+  const headerRow = ws.getRow(1);
+  headerRow.eachCell((cell) => {
+    cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF003C71' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  });
+  headerRow.height = 26;
+  ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowNumber === 1) return;
+    row.eachCell((cell) => { cell.font = { name: 'Arial', size: 10.5 }; });
+    row.getCell('clave').font = { name: 'Arial', size: 10.5, bold: true };
+  });
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: Object.keys(tecnicos).length + 1, column: 4 } };
+
+  const notas = wb.addWorksheet('Notas');
+  notas.columns = [{ width: 100 }];
+  [
+    'CREDENCIALES DEL PORTAL DE TECNICOS',
+    '',
+    'Este archivo es SOLO PARA USO LOCAL. No se sube al repositorio (esta en .gitignore) ni se publica en ningun lado.',
+    '',
+    'Cada tecnico entra en https://supervisionenaccion-stack.github.io/portal-tecnicos/ con el "Usuario" y la "Clave" de su fila.',
+    'El usuario es su primer nombre + primer apellido (tal como aparece en la columna "Usuario"). No distingue mayusculas/minusculas.',
+    'La clave son los ultimos 4 digitos de su RUT (con el digito verificador, sin guion). Tampoco distingue mayusculas/minusculas si termina en K.',
+    '',
+    'Se regenera cada vez que corres Generar_Reporte_Reincidencias.bat -- vuelve a abrir este archivo despues de actualizar para ver los datos del dia.',
+  ].forEach((t, i) => {
+    const row = notas.addRow([t]);
+    row.getCell(1).font = i === 0 ? { name: 'Arial', bold: true, size: 12 } : { name: 'Arial', size: 10 };
+    row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
+  });
+
+  const outPath = path.join(carpeta, 'Credenciales_Tecnicos_NO_SUBIR.xlsx');
+  await wb.xlsx.writeFile(outPath);
+  console.log('Excel de credenciales generado (local, no se sube):', outPath);
 }
 
 function generarHtml(DATA) {
@@ -632,4 +693,7 @@ if ('serviceWorker' in navigator) {
 </html>`;
 }
 
-main();
+main().catch((err) => {
+  console.error('ERROR:', err.message);
+  process.exitCode = 1;
+});
