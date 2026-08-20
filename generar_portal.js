@@ -125,6 +125,52 @@ function rutInterno(r) {
   return (r || '').toString().trim().toUpperCase().replace(/\./g, '').replace(/-/g, '');
 }
 
+// Lee el NPS por tecnico que exporta el informe NPS (repo/proyecto aparte,
+// ver actualizar_informe.ps1). Esa BBDD no trae RUT, asi que el cruce con
+// cada persona se hace mas abajo por nombre corto (mismo criterio del login).
+function cargarNpsTecnicos() {
+  const npsPath = path.join(carpetaBbdd, 'nps-tecnicos.json');
+  if (!fs.existsSync(npsPath)) {
+    console.log('AVISO: no se encontro nps-tecnicos.json en bbdd -- el portal se genera sin datos de NPS.');
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(npsPath, 'utf8'));
+  } catch (err) {
+    console.log('AVISO: no se pudo leer nps-tecnicos.json (' + err.message + ') -- el portal se genera sin datos de NPS.');
+    return null;
+  }
+}
+
+// Cruza el NPS (agregado por tecnico+zona) con cada persona (identificada por
+// RUT) usando el mismo nombre corto del login. Si el tecnico trabajo en mas
+// de una zona ese mes (aparece en mas de un grupo tecnico+zona), se combinan
+// todas sus encuestas en un solo NPS en vez de elegir una sola zona.
+function asignarNps(personas, npsData) {
+  if (!npsData || !Array.isArray(npsData.tecnicos)) return;
+  const porLogin = {};
+  npsData.tecnicos.forEach((t) => {
+    const key = loginKey(t.tecnico);
+    if (!porLogin[key]) porLogin[key] = [];
+    porLogin[key].push(t);
+  });
+
+  personas.forEach((p) => {
+    const candidatos = porLogin[loginKey(p.nombre)];
+    if (!candidatos || candidatos.length === 0) { p.nps = null; return; }
+    const total = candidatos.reduce((a, c) => a + c.total, 0);
+    const promotores = candidatos.reduce((a, c) => a + c.P, 0);
+    const neutros = candidatos.reduce((a, c) => a + c.N, 0);
+    const detractores = candidatos.reduce((a, c) => a + c.D, 0);
+    const zonas = [...new Set(candidatos.map((c) => c.zona))];
+    p.nps = {
+      nps: total ? +(((promotores - detractores) / total) * 100).toFixed(1) : null,
+      total, promotores, neutros, detractores,
+      zona: zonas.join(' y '),
+    };
+  });
+}
+
 function mediana(arr) {
   if (arr.length === 0) return null;
   const s = [...arr].sort((a, b) => a - b);
@@ -316,6 +362,9 @@ async function main() {
     };
   });
 
+  const npsData = cargarNpsTecnicos();
+  asignarNps(personas, npsData);
+
   // Asignar el login (nombre corto) a cada persona. Si dos personas DISTINTAS
   // comparten el mismo nombre corto, se le agrega " 2", " 3"... a partir de la
   // segunda (ordenadas por nombre completo, para que el resultado sea estable
@@ -371,6 +420,8 @@ async function main() {
     metaInfancia: +(META_INFANCIA * 100).toFixed(1),
     promedioEquipoReincidencias: reincidencias.promedioEquipo != null ? +(reincidencias.promedioEquipo * 100).toFixed(1) : null,
     promedioEquipoInfancia: infancia.promedioEquipo != null ? +(infancia.promedioEquipo * 100).toFixed(1) : null,
+    metaNps: npsData ? npsData.meta : null,
+    periodoNps: npsData ? npsData.periodo : null,
     tecnicos,
   };
 
@@ -601,6 +652,7 @@ function generarHtml(DATA) {
 
     <div class="report-card panel" id="seccionReincidencias"></div>
     <div class="report-card panel" id="seccionInfancia"></div>
+    <div class="report-card panel" id="seccionNps"></div>
   </div>
 </main>
 
@@ -636,6 +688,60 @@ function estado(tasa, meta) {
   if (tasa <= meta) return { emoji: '✅', texto: 'Cumples la meta', clase: 'ok' };
   if (tasa <= meta * 1.5) return { emoji: '⚠️', texto: 'Fuera de la meta', clase: 'warn' };
   return { emoji: '🔴', texto: 'Muy fuera de la meta', clase: 'bad' };
+}
+
+// El NPS va al reves que las tasas de arriba: mientras mas alto, mejor.
+function estadoNps(nps, meta) {
+  if (nps >= meta) return { emoji: '✅', texto: 'Cumples la meta', clase: 'ok' };
+  if (nps >= meta - 15) return { emoji: '⚠️', texto: 'Fuera de la meta', clase: 'warn' };
+  return { emoji: '🔴', texto: 'Muy fuera de la meta', clase: 'bad' };
+}
+
+function barraNps(nps, meta, cls) {
+  const posicion = (v) => ((Math.max(-100, Math.min(100, v)) + 100) / 200) * 100;
+  const anchoNps = posicion(nps);
+  const posMeta = posicion(meta);
+  return '<div class="barra-wrap">'
+    + '<div class="barra-track">'
+    + '<div class="barra-fill ' + cls + '" style="width:' + anchoNps.toFixed(1) + '%"><span>' + nps + '%</span></div>'
+    + '<div class="barra-meta" style="left:' + posMeta.toFixed(1) + '%"></div>'
+    + '<div class="barra-meta-label" style="left:' + posMeta.toFixed(1) + '%">Meta ' + meta + '%</div>'
+    + '</div></div>';
+}
+
+function bloqueNps(t) {
+  const icono = '⭐', titulo = 'Satisfaccion del cliente (NPS)';
+  const periodoTexto = DATA.periodoNps ? (' Datos de ' + DATA.periodoNps + '.') : '';
+  const explicacion = 'Mide que tan satisfechos quedan tus clientes despues de tu visita, segun encuestas propias.' + periodoTexto + ' Mientras mas alto, mejor.';
+  if (DATA.metaNps == null || !t.nps) {
+    return '<div class="cabecera"><span class="icono">' + icono + '</span><h2>' + titulo + '</h2></div>'
+      + '<p class="explica">' + explicacion + '</p>'
+      + '<p class="sin-datos">No hay suficientes encuestas respondidas para calcular tu NPS este periodo (se necesitan al menos 5).</p>';
+  }
+  const datos = t.nps;
+  const meta = DATA.metaNps;
+  const est = estadoNps(datos.nps, meta);
+  const cumpleFrase = datos.nps >= meta
+    ? 'Tu NPS (<b>' + datos.nps + '%</b>) cumple la meta (' + meta + '%).'
+    : 'Tu NPS (<b>' + datos.nps + '%</b>) esta <b>bajo la meta</b> (' + meta + '%) — te faltan ' + (meta - datos.nps).toFixed(1) + ' puntos para cumplirla.';
+
+  contadorDetalle++;
+  const idDetalle = 'detalle' + contadorDetalle;
+
+  let html = '<div class="cabecera"><span class="icono">' + icono + '</span><h2>' + titulo + '</h2></div>';
+  html += '<p class="explica">' + explicacion + '</p>';
+  html += '<div class="estado-pill ' + est.clase + '">' + est.emoji + ' ' + est.texto + '</div>';
+  html += barraNps(datos.nps, meta, est.clase);
+  html += '<p class="frase-clave">' + cumpleFrase + '</p>';
+  html += '<p class="frase-clave">Calculado sobre <b>' + datos.total + '</b> encuestas respondidas' + (datos.zona ? ' en ' + datos.zona : '') + '.</p>';
+  html += '<div class="detalle-toggle" onclick="toggleDetalle(\\'' + idDetalle + '\\')">Ver el detalle en numeros <span id="' + idDetalle + 'Flecha">▾</span></div>';
+  html += '<div class="detalle-body" id="' + idDetalle + '">';
+  html += '<div class="fila-dato"><span class="k">Encuestas respondidas</span><span class="v">' + datos.total + '</span></div>';
+  html += '<div class="fila-dato"><span class="k">Promotores</span><span class="v">' + datos.promotores + '</span></div>';
+  html += '<div class="fila-dato"><span class="k">Neutros</span><span class="v">' + datos.neutros + '</span></div>';
+  html += '<div class="fila-dato"><span class="k">Detractores</span><span class="v">' + datos.detractores + '</span></div>';
+  html += '</div>';
+  return html;
 }
 
 function barraTasa(tasa, meta, cls) {
@@ -726,6 +832,7 @@ function mostrarPerfil(t) {
   const estados = [];
   if (t.reincidencias) estados.push(estado(t.reincidencias.tasa, DATA.metaReincidencias).clase);
   if (t.infancia) estados.push(estado(t.infancia.tasa, DATA.metaInfancia).clase);
+  if (t.nps && DATA.metaNps != null) estados.push(estadoNps(t.nps.nps, DATA.metaNps).clase);
   let claseGeneral = 'ok', mensajeGeneral = '🎉 <b>Vas muy bien este mes.</b> <span>Tus dos indicadores estan dentro de la meta. Sigue asi.</span>';
   if (estados.includes('bad')) {
     claseGeneral = 'bad';
@@ -750,6 +857,7 @@ function mostrarPerfil(t) {
     meta: DATA.metaInfancia, promedioEquipo: DATA.promedioEquipoInfancia, datos: t.infancia,
     fraseFormula: 'instalaciones que hiciste',
   });
+  document.getElementById('seccionNps').innerHTML = bloqueNps(t);
 }
 
 function intentarLogin() {
