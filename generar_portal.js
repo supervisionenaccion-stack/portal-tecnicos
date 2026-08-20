@@ -184,7 +184,9 @@ function analizarReincidencias(csvPath) {
 
 // ---------------- Averias de Infancia ----------------
 function analizarInfancia(csvPath) {
-  const rows = leerCsv(csvPath);
+  // El archivo origen a veces trae filas sueltas de otra empresa (ej. "LARI",
+  // agencia "INDEPENDENCIA") mezcladas con las de COBRA. Se descartan aqui.
+  const rows = leerCsv(csvPath).filter((r) => (r['empresa_agencia'] || '').trim().toUpperCase() === 'COBRA');
   const instalaciones = rows.filter((r) => ['A', 'T'].includes((r['vpi_tipo_trabajo_producto'] || '').trim()));
 
   const porRut = {};
