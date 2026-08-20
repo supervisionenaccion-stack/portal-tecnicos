@@ -184,10 +184,22 @@ function analizarReincidencias(csvPath) {
 
 // ---------------- Averias de Infancia ----------------
 function analizarInfancia(csvPath) {
-  // El archivo origen a veces trae filas sueltas de otra empresa (ej. "LARI",
-  // agencia "INDEPENDENCIA") mezcladas con las de COBRA. Se descartan aqui.
-  const rows = leerCsv(csvPath).filter((r) => (r['empresa_agencia'] || '').trim().toUpperCase() === 'COBRA');
-  const instalaciones = rows.filter((r) => ['A', 'T'].includes((r['vpi_tipo_trabajo_producto'] || '').trim()));
+  // Mismos criterios que Supervisor: solo agencias de la zona SUR, solo filas
+  // de la empresa COBRA, y se descartan tecnicos "PTA" (placeholders que han
+  // aparecido sueltos en el archivo origen).
+  const AGENCIAS_VALIDAS = ['COYHAIQUE', 'PUNTA ARENAS'];
+  const rows = leerCsv(csvPath).filter((r) =>
+    AGENCIAS_VALIDAS.includes((r['toa_xa_original_agency'] || '').trim()) &&
+    (r['toa_xr_company_name'] || '').trim().toUpperCase() === 'COBRA' &&
+    !(r['toa_provider_name'] || '').includes('PTA')
+  );
+  // Instalaciones (Alta), traslados (T) y tipo B; se excluyen ademas ciertas
+  // claves de cierre de la reparacion de infancia que no representan un caso valido.
+  const CLAVES_CIERRE_EXCLUIDAS = ['F20', 'F23', '913', '561', 'A12', 'B01', 'B36', 'I50'];
+  const instalaciones = rows.filter((r) =>
+    ['A', 'T', 'B'].includes((r['vpi_tipo_trabajo_producto'] || '').trim()) &&
+    !CLAVES_CIERRE_EXCLUIDAS.includes((r['rmdy_clave_cierre'] || '').trim())
+  );
 
   const porRut = {};
   instalaciones.forEach((r) => {
