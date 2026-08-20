@@ -138,7 +138,24 @@ function promedio(arr) {
 
 // ---------------- Repetido Reparado ----------------
 function analizarReincidencias(csvPath) {
-  const rows = leerCsv(csvPath);
+  // Mismos criterios que Supervisor: agencia SUR, tecnologia FO, empresa
+  // COBRA, sin tecnicos "PTA", y sin ciertas claves de cierre no validas
+  // (derivadas de rdy_prd_cat_nivel_2_sol).
+  const AGENCIAS_VALIDAS = ['COYHAIQUE', 'PUNTA ARENAS'];
+  const CLAVES_CIERRE_EXCLUIDAS = ['913', 'F20', 'F23', '561', 'A12', 'B01', 'B36', 'I50'];
+  function tecnologiaFila(r) {
+    return (r['toa_piv_tecnologia'] === 'FO' || r['toa_piv_descripcion'] === 'FO') ? 'FO' : r['toa_piv_tecnologia'];
+  }
+  function claveCierreFila(r) {
+    return (r['rdy_prd_cat_nivel_2_sol'] || '').split('_')[0];
+  }
+  const rows = leerCsv(csvPath).filter((r) =>
+    AGENCIAS_VALIDAS.includes((r['toa_piv_agencia'] || '').trim()) &&
+    !CLAVES_CIERRE_EXCLUIDAS.includes(claveCierreFila(r)) &&
+    !(r['toa_piv_nombre_tecnico'] || '').includes('PTA') &&
+    tecnologiaFila(r) === 'FO' &&
+    (r['toa_piv_empresa'] || '').trim() === 'COBRA'
+  );
   const reit = rows.filter((r) => (r['rdy_prd_tiene_reitero_30d'] || '').trim() === '1');
   const reitFolios = new Set(reit.map((r) => r['toa_piv_folio_toa']));
 
