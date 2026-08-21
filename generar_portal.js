@@ -765,7 +765,6 @@ function bloqueReporte(opts) {
       + '<p class="sin-datos">No hay registros para ti en este informe en el periodo actual.</p>';
   }
   const est = estado(datos.tasa, meta);
-  const deCada100 = Math.round(datos.tasa);
   const cumpleFrase = datos.tasa <= meta
     ? 'Tu tasa (<b>' + datos.tasa + '%</b>) esta dentro de la meta (no superar el ' + meta + '%).'
     : 'Tu tasa (<b>' + datos.tasa + '%</b>) esta <b>sobre la meta</b> (no debe superar el ' + meta + '%) — te faltan '
@@ -791,7 +790,9 @@ function bloqueReporte(opts) {
   html += '<p class="explica">' + explicacion + '</p>';
   html += '<div class="estado-pill ' + est.clase + '">' + est.emoji + ' ' + est.texto + '</div>';
   html += barraTasa(datos.tasa, meta, est.clase);
-  html += '<p class="frase-clave">De cada 100 ' + fraseFormula + ', <b>' + deCada100 + '</b> tuvieron un problema despues.</p>';
+  const problemaVerbo = datos.reincidencias === 1 ? 'tuvo un problema' : 'tuvieron problemas';
+  html += '<p class="frase-clave">De tus <b>' + datos.total + '</b> ' + fraseFormula + ', <b>' + datos.reincidencias + '</b> '
+    + problemaVerbo + ' despues (' + datos.tasa + '%).</p>';
   html += '<p class="frase-clave">' + cumpleFrase + compEquipo + '</p>';
   if (rankingFrase) {
     html += '<p class="frase-clave">' + rankingFrase + '</p>';
