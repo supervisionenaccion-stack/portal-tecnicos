@@ -767,8 +767,9 @@ function bloqueReporte(opts) {
   const est = estado(datos.tasa, meta);
   const cumpleFrase = datos.tasa <= meta
     ? 'Tu tasa (<b>' + datos.tasa + '%</b>) esta dentro de la meta (no superar el ' + meta + '%).'
-    : 'Tu tasa (<b>' + datos.tasa + '%</b>) esta <b>sobre la meta</b> (no debe superar el ' + meta + '%) — te faltan '
-      + (datos.tasa - meta).toFixed(1) + ' puntos para cumplirla.';
+    : 'Tu tasa (<b>' + datos.tasa + '%</b>) esta <b>sobre la meta</b> (no debe superar el ' + meta + '%), '
+      + (datos.tasa - meta).toFixed(1) + ' puntos por encima. Ya no puedes bajar este numero en este periodo'
+      + ' — para no empeorarlo, evita que se sumen mas reparaciones repetidas antes del proximo periodo.';
   let compEquipo = '';
   if (promedioEquipo != null) {
     if (datos.tasa < promedioEquipo) {
