@@ -769,13 +769,19 @@ function bloqueReporte(opts) {
     ? 'Tu tasa (<b>' + datos.tasa + '%</b>) esta dentro de la meta (no superar el ' + meta + '%).'
     : 'Tu tasa (<b>' + datos.tasa + '%</b>) esta <b>sobre la meta</b> (no debe superar el ' + meta + '%) — te faltan '
       + (datos.tasa - meta).toFixed(1) + ' puntos para cumplirla.';
-  const compEquipo = promedioEquipo != null
-    ? (datos.tasa <= promedioEquipo
-        ? (datos.tasa <= meta
-            ? ' Ademas, es mejor que el promedio del equipo (' + promedioEquipo + '%).'
-            : ' Aun asi, es mejor que el promedio del equipo (' + promedioEquipo + '%), que tampoco cumple la meta.')
-        : ' El promedio del equipo (' + promedioEquipo + '%) es un poco mejor que tu numero.')
-    : '';
+  let compEquipo = '';
+  if (promedioEquipo != null) {
+    if (datos.tasa < promedioEquipo) {
+      compEquipo = datos.tasa <= meta
+        ? ' Ademas, es mejor que el promedio del equipo (' + promedioEquipo + '%).'
+        : ' Aun asi, es mejor que el promedio del equipo (' + promedioEquipo + '%), que tampoco cumple la meta.';
+    } else if (datos.tasa === promedioEquipo) {
+      compEquipo = ' Tu numero esta igual al promedio del equipo (' + promedioEquipo + '%)'
+        + (promedioEquipo > meta ? ', que tampoco cumple la meta.' : '.');
+    } else {
+      compEquipo = ' El promedio del equipo (' + promedioEquipo + '%) es un poco mejor que tu numero.';
+    }
+  }
   let rankingFrase = '';
   if (datos.ranking) {
     const enBuenLugar = datos.ranking <= Math.ceil(datos.rankingTotal / 3);
