@@ -770,15 +770,15 @@ function bloqueReporte(opts) {
     : 'Tu tasa (<b>' + datos.tasa + '%</b>) esta <b>sobre la meta</b> (no debe superar el ' + meta + '%), '
       + (datos.tasa - meta).toFixed(1) + ' puntos por encima. Ya no puedes bajar este numero en este periodo'
       + ' — para no empeorarlo, evita que se sumen mas reparaciones repetidas antes del proximo periodo.';
+  // La comparacion con el promedio del equipo solo se muestra si el tecnico
+  // cumple la meta (reconocimiento positivo). Si no la cumple, esa comparacion
+  // no ayuda -- el foco debe estar solo en su propia meta individual.
   let compEquipo = '';
-  if (promedioEquipo != null) {
+  if (promedioEquipo != null && datos.tasa <= meta) {
     if (datos.tasa < promedioEquipo) {
-      compEquipo = datos.tasa <= meta
-        ? ' Ademas, es mejor que el promedio del equipo (' + promedioEquipo + '%).'
-        : ' Aun asi, es mejor que el promedio del equipo (' + promedioEquipo + '%), que tampoco cumple la meta.';
+      compEquipo = ' Ademas, es mejor que el promedio del equipo (' + promedioEquipo + '%).';
     } else if (datos.tasa === promedioEquipo) {
-      compEquipo = ' Tu numero esta igual al promedio del equipo (' + promedioEquipo + '%)'
-        + (promedioEquipo > meta ? ', que tampoco cumple la meta.' : '.');
+      compEquipo = ' Tu numero esta igual al promedio del equipo (' + promedioEquipo + '%).';
     } else {
       compEquipo = ' El promedio del equipo (' + promedioEquipo + '%) es un poco mejor que tu numero.';
     }
