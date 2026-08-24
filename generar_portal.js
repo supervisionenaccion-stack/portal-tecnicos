@@ -563,8 +563,6 @@ function generarHtml(DATA) {
   #logoutBtn:hover{ background:var(--panel-2); }
   .intro-personal{ font-size:14px; color:var(--text-dim); line-height:1.6; margin:4px 0 22px; }
   .drive-embed{ width:100%; height:320px; border:1px solid var(--border); border-radius:10px; margin-top:4px; }
-  .drive-link{ display:inline-flex; align-items:center; gap:8px; background:var(--celeste-soft); color:var(--cobra-navy); border:1px solid var(--celeste); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:700; text-decoration:none; margin-top:12px; transition:background .15s ease,color .15s ease; }
-  .drive-link:hover{ background:var(--celeste); color:#fff; }
 
   .resumen-general{ display:flex; align-items:center; gap:16px; padding:20px 22px; border-radius:14px; margin-bottom:24px; border:1px solid var(--border); }
   .resumen-general.ok{ background:var(--promotor-bg); border-color:rgba(31,169,113,.3); }
@@ -663,7 +661,6 @@ function generarHtml(DATA) {
       <div class="cabecera"><span class="icono">📁</span><h2>Archivos compartidos</h2></div>
       <p class="explica">Aqui puedes ver y descargar los archivos que te compartimos.</p>
       <iframe class="drive-embed" src="https://drive.google.com/embeddedfolderview?id=1QAMz_gPdQk7LzfTTxzMq7H5MUmIcpCwN#grid" loading="lazy"></iframe>
-      <a class="drive-link" href="https://drive.google.com/drive/folders/1QAMz_gPdQk7LzfTTxzMq7H5MUmIcpCwN?usp=sharing" target="_blank" rel="noopener noreferrer">Abrir en Google Drive ↗</a>
     </div>
   </div>
 </main>
