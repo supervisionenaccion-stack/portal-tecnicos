@@ -94,10 +94,12 @@ function listarMesesExistentes(carpeta) {
 }
 
 // Solo se usa para calcular la clave de 4 digitos; el resultado (soloDigitos)
-// nunca identifica por si solo a una persona.
+// nunca identifica por si solo a una persona. Si el digito verificador es
+// "K" se reemplaza por "0" para que la clave sea siempre numerica (el campo
+// de clave del portal usa teclado numerico en el celular, que no tiene K).
 function ultimos4DigitosRut(r) {
   const limpio = (r || '').toString().trim().toUpperCase().replace(/\./g, '').replace(/-/g, '');
-  return limpio.slice(-4);
+  return limpio.slice(-4).replace(/K$/, '0');
 }
 
 function normalizarTexto(s) {
@@ -484,7 +486,7 @@ async function generarExcelCredenciales(tecnicos) {
     '',
     'Cada tecnico entra en https://supervisionenaccion-stack.github.io/portal-tecnicos/ con el "Usuario" y la "Clave" de su fila.',
     'El usuario es su primer nombre + primer apellido (tal como aparece en la columna "Usuario"). No distingue mayusculas/minusculas.',
-    'La clave son los ultimos 4 digitos de su RUT (con el digito verificador, sin guion). Tampoco distingue mayusculas/minusculas si termina en K.',
+    'La clave son los ultimos 4 digitos de su RUT (con el digito verificador, sin guion). Si el digito verificador es K, se reemplaza por 0 (la clave es siempre numerica).',
     '',
     'Se regenera cada vez que corres Generar_Reporte_Reincidencias.bat -- vuelve a abrir este archivo despues de actualizar para ver los datos del dia.',
   ].forEach((t, i) => {
@@ -636,7 +638,7 @@ function generarHtml(DATA) {
     <div class="campo">
       <label for="inputPass">Clave (4 numeros)</label>
       <input type="password" id="inputPass" placeholder="••••" autocomplete="current-password" inputmode="numeric" maxlength="4">
-      <div class="ayuda">Son los ultimos 4 digitos de tu RUT, incluido el digito verificador, sin guion.</div>
+      <div class="ayuda">Son los ultimos 4 digitos de tu RUT, incluido el digito verificador, sin guion. Si tu RUT termina en K, usa 0 en vez de K.</div>
     </div>
     <button id="loginBtn">Ver mi reporte</button>
   </div>
