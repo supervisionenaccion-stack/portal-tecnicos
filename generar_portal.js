@@ -660,8 +660,8 @@ function generarHtml(DATA) {
     <div class="report-card panel">
       <div class="cabecera"><span class="icono">📁</span><h2>Archivos compartidos</h2></div>
       <p class="explica">Aqui puedes ver y descargar los archivos que te compartimos.</p>
-      <iframe class="drive-embed" src="https://drive.google.com/embeddedfolderview?id=1INzM1JMRzW0toDDRC_A6uG21BHLX4pCv#grid" loading="lazy"></iframe>
-      <a class="drive-link" href="https://drive.google.com/drive/folders/1INzM1JMRzW0toDDRC_A6uG21BHLX4pCv?usp=sharing" target="_blank" rel="noopener noreferrer">Abrir en Google Drive ↗</a>
+      <iframe class="drive-embed" src="https://drive.google.com/embeddedfolderview?id=1QAMz_gPdQk7LzfTTxzMq7H5MUmIcpCwN#grid" loading="lazy"></iframe>
+      <a class="drive-link" href="https://drive.google.com/drive/folders/1QAMz_gPdQk7LzfTTxzMq7H5MUmIcpCwN?usp=sharing" target="_blank" rel="noopener noreferrer">Abrir en Google Drive ↗</a>
     </div>
   </div>
 </main>
