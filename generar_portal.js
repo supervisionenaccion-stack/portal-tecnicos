@@ -619,7 +619,7 @@ function generarHtml(DATA) {
     <div class="eyebrow">Portal de Tecnicos</div>
   </div>
   <h1 id="heroTitle">Mis Indicadores</h1>
-  <div class="subtitle" id="heroSubtitle">Aca puedes ver, de forma simple, como te fue este mes y en que puedes enfocarte para mejorar.</div>
+  <div class="subtitle" id="heroSubtitle">Aca puedes ver, de forma simple, como te va este mes y en que puedes enfocarte para mejorar.</div>
   <div class="archive-row" id="archiveRow"></div>
 </header>
 
@@ -649,7 +649,7 @@ function generarHtml(DATA) {
       </div>
       <button id="logoutBtn">Cerrar sesion</button>
     </div>
-    <p class="intro-personal">Este es tu reporte personal de calidad. Te mostramos como te fue este mes con tus reparaciones, y en que puedes enfocarte para mejorar.</p>
+    <p class="intro-personal">Este es tu reporte personal de calidad. Te mostramos como te va este mes con tus reparaciones, y en que puedes enfocarte para mejorar.</p>
 
     <div id="resumenGeneral"></div>
 
