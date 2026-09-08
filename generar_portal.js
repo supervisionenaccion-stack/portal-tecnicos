@@ -137,6 +137,24 @@ function rutInterno(r) {
   return (r || '').toString().trim().toUpperCase().replace(/\./g, '').replace(/-/g, '');
 }
 
+// Lee el DATA embebido de un mes ya archivado (index.html o index_YYYY-MM.html)
+// para poder comparar el mes actual contra el anterior. Si el archivo no
+// existe (primer mes del historial) o no se puede parsear, retorna null y la
+// comparacion simplemente no se muestra -- no rompe la generacion normal.
+function cargarDatosDeArchivo(nombreArchivo) {
+  const p = path.join(carpeta, nombreArchivo);
+  if (!fs.existsSync(p)) return null;
+  try {
+    const html = fs.readFileSync(p, 'utf8');
+    const m = html.match(/const DATA = (\{[\s\S]*?\});\n\nfunction normalizarTexto/);
+    if (!m) return null;
+    return JSON.parse(m[1]);
+  } catch (err) {
+    console.log('AVISO: no se pudo leer el mes anterior desde ' + nombreArchivo + ' (' + err.message + ').');
+    return null;
+  }
+}
+
 // Lee el NPS por tecnico que exporta el informe NPS (repo/proyecto aparte,
 // ver actualizar_informe.ps1). Esa BBDD no trae RUT, asi que el cruce con
 // cada persona se hace mas abajo por nombre corto (mismo criterio del login).
@@ -363,30 +381,51 @@ async function main() {
   const reincidencias = analizarReincidencias(csvReincidencias);
   const infancia = analizarInfancia(csvInfancia);
 
+  // Mes anterior (para mostrar "mejoraste/subiste X puntos"): se busca en la
+  // lista de archivos ya ordenada de mas reciente a mas antiguo, el que sigue
+  // al mes actual. Se lee su DATA embebido tal cual quedo archivado -- no se
+  // recalcula nada, es una comparacion contra lo que ya se publico ese mes.
+  const idxActual = archivos.findIndex((a) => a.slug === periodoSlug);
+  const mesAnteriorInfo = idxActual >= 0 ? archivos[idxActual + 1] : null;
+  const datosMesAnterior = mesAnteriorInfo ? cargarDatosDeArchivo(mesAnteriorInfo.url) : null;
+  const tecnicosMesAnterior = datosMesAnterior ? datosMesAnterior.tecnicos : null;
+  const labelMesAnterior = mesAnteriorInfo ? mesAnteriorInfo.label : null;
+  if (tecnicosMesAnterior) console.log('Comparando contra mes anterior:', labelMesAnterior);
+
   // Fusion por RUT interno (nunca por nombre): garantiza que dos personas
   // distintas jamas se mezclen, aunque tengan el mismo nombre corto.
   const rutsTodos = new Set([...Object.keys(reincidencias.mapa), ...Object.keys(infancia.mapa)]);
   console.log('Tecnicos con datos:', rutsTodos.size);
 
+  // Busca el dato del tecnico en el mes anterior por nombre corto (esa BBDD
+  // ya no tiene RUT, se descarto al publicarse). Aproximado pero razonable:
+  // las colisiones de nombre corto son raras y esto es solo informativo.
+  function tasaAnteriorDe(nombre, seccion) {
+    if (!tecnicosMesAnterior) return null;
+    const t = tecnicosMesAnterior[loginKey(nombre)];
+    return (t && t[seccion]) ? t[seccion].tasa : null;
+  }
+
   const personas = [...rutsTodos].map((rut) => {
     const r = reincidencias.mapa[rut];
     const i = infancia.mapa[rut];
+    const nombre = (r && r.nombre) || (i && i.nombre) || '';
     return {
       rut,
-      nombre: (r && r.nombre) || (i && i.nombre) || '',
+      nombre,
       agencia: (r && r.agencia) || (i && i.agencia) || '',
       clave: (r && r.clave) || (i && i.clave) || '',
       reincidencias: r ? {
         total: r.total, reincidencias: r.reincidencias, tasa: +(r.tasa * 100).toFixed(1),
         ranking: r.ranking || null, rankingTotal: r.rankingTotal || null,
         diasPromedio: r.diasPromedio, causaFrecuente: r.causaFrecuente, causaFrecuenteCasos: r.causaFrecuenteCasos,
-        mismoPct: r.mismoPct, casos: r.casos || [],
+        mismoPct: r.mismoPct, casos: r.casos || [], tasaAnterior: tasaAnteriorDe(nombre, 'reincidencias'),
       } : null,
       infancia: i ? {
         total: i.total, reincidencias: i.reincidencias, tasa: +(i.tasa * 100).toFixed(1),
         ranking: i.ranking || null, rankingTotal: i.rankingTotal || null,
         diasPromedio: i.diasPromedio, causaFrecuente: i.causaFrecuente, causaFrecuenteCasos: i.causaFrecuenteCasos,
-        mismoPct: i.mismoPct, casos: i.casos || [],
+        mismoPct: i.mismoPct, casos: i.casos || [], tasaAnterior: tasaAnteriorDe(nombre, 'infancia'),
       } : null,
     };
   });
@@ -458,6 +497,7 @@ async function main() {
     promedioEquipoInfancia: infancia.promedioEquipo != null ? +(infancia.promedioEquipo * 100).toFixed(1) : null,
     metaNps: npsData ? npsData.meta : null,
     periodoNps: npsData ? npsData.periodo : null,
+    labelMesAnterior,
     tecnicos,
   };
 
@@ -608,6 +648,7 @@ function generarHtml(DATA) {
   #logoutBtn:hover{ background:var(--panel-2); }
   .intro-personal{ font-size:14px; color:var(--text-dim); line-height:1.6; margin:4px 0 22px; }
   .drive-embed{ width:100%; height:320px; border:1px solid var(--border); border-radius:10px; margin-top:4px; }
+  .badge-nuevo{ display:inline-block; font-size:11px; background:var(--detractor); color:#fff; padding:2px 9px; border-radius:10px; margin-left:8px; vertical-align:middle; font-weight:800; }
 
   .resumen-general{ display:flex; align-items:center; gap:16px; padding:20px 22px; border-radius:14px; margin-bottom:24px; border:1px solid var(--border); }
   .resumen-general.ok{ background:var(--promotor-bg); border-color:rgba(31,169,113,.3); }
@@ -711,8 +752,8 @@ function generarHtml(DATA) {
     <div class="report-card panel" id="seccionInfancia"></div>
     <div class="report-card panel" id="seccionNps"></div>
 
-    <div class="report-card panel">
-      <div class="cabecera"><span class="icono">📁</span><h2>Archivos compartidos</h2></div>
+    <div class="report-card panel" id="seccionArchivos">
+      <div class="cabecera"><span class="icono">📁</span><h2>Archivos compartidos <span id="badgeArchivosNuevo" class="badge-nuevo" hidden>🆕 nuevo</span></h2></div>
       <p class="explica">Aqui puedes ver y descargar los archivos que te compartimos.</p>
       <iframe class="drive-embed" src="https://drive.google.com/embeddedfolderview?id=1QAMz_gPdQk7LzfTTxzMq7H5MUmIcpCwN#grid" loading="lazy"></iframe>
     </div>
@@ -867,6 +908,19 @@ function bloqueReporte(opts) {
       + (enBuenLugar ? ', entre los mejores del equipo.' : '.');
   }
 
+  // Comparacion con el mes anterior (mientras mas bajo, mejor en este indicador).
+  let comparacionFrase = '';
+  if (datos.tasaAnterior != null && DATA.labelMesAnterior) {
+    const delta = +(datos.tasa - datos.tasaAnterior).toFixed(1);
+    if (delta < 0) {
+      comparacionFrase = '📈 Mejoraste <b>' + Math.abs(delta) + ' puntos</b> respecto a ' + DATA.labelMesAnterior + '.';
+    } else if (delta > 0) {
+      comparacionFrase = '📉 Subiste <b>' + delta + ' puntos</b> respecto a ' + DATA.labelMesAnterior + ' (en este indicador, mas bajo es mejor).';
+    } else {
+      comparacionFrase = 'Quedaste igual que en ' + DATA.labelMesAnterior + '.';
+    }
+  }
+
   contadorDetalle++;
   const idDetalle = 'detalle' + contadorDetalle;
 
@@ -878,6 +932,9 @@ function bloqueReporte(opts) {
   html += '<p class="frase-clave">De tus <b>' + datos.total + '</b> ' + fraseFormula + ', <b>' + datos.reincidencias + '</b> '
     + problemaVerbo + ' despues (' + datos.tasa + '%).</p>';
   html += '<p class="frase-clave">' + cumpleFrase + compEquipo + '</p>';
+  if (comparacionFrase) {
+    html += '<p class="frase-clave">' + comparacionFrase + '</p>';
+  }
   if (rankingFrase) {
     html += '<p class="frase-clave">' + rankingFrase + '</p>';
   }
@@ -944,6 +1001,25 @@ function mostrarPerfil(t) {
     fraseFormula: 'instalaciones que hiciste',
   });
   document.getElementById('seccionNps').innerHTML = bloqueNps(t);
+
+  // Aviso de archivos "nuevos": no hay forma de saber si de verdad se agrego
+  // un archivo nuevo a la carpeta de Drive (no hay API conectada), asi que se
+  // usa el periodo del reporte como aproximacion -- se muestra un badge la
+  // primera vez que el tecnico entra en cada periodo, y desaparece apenas
+  // hace click en la seccion de archivos.
+  try {
+    const keyVisto = 'archivosVisto_' + (sessionStorage.getItem('portalTecnicoKey') || '');
+    const badge = document.getElementById('badgeArchivosNuevo');
+    const seccionArchivos = document.getElementById('seccionArchivos');
+    if (badge && seccionArchivos) {
+      badge.hidden = localStorage.getItem(keyVisto) === DATA.periodoSlug;
+      seccionArchivos.addEventListener('click', function marcarVisto() {
+        localStorage.setItem(keyVisto, DATA.periodoSlug);
+        badge.hidden = true;
+        seccionArchivos.removeEventListener('click', marcarVisto);
+      });
+    }
+  } catch (err) { /* localStorage puede fallar en modo privado; no es critico */ }
 }
 
 function intentarLogin() {
@@ -1000,6 +1076,23 @@ if (keyGuardada && DATA.tecnicos[keyGuardada]) {
     'Cada reto es una oportunidad de aprender 📚',
     'Tu actitud hace la diferencia 🔥',
   ];
+  // Frases especiales por fecha (automatico segun el mes del visitante):
+  // Fiestas Patrias en septiembre, Navidad/Ano Nuevo en diciembre.
+  var FRASES_ESPECIALES = {
+    9: [
+      '¡Viva Chile! Que las Fiestas Patrias te recarguen de energia 🇨🇱🎉',
+      'Dieciocho de septiembre: a celebrar como se merece, con toda la energia del pais 🇨🇱🥟',
+      'Como buen chileno, sigue poniendole empanada y power a cada dia 🇨🇱💪',
+      'Fiestas Patrias: buen momento para parar, celebrar, y volver con toda la energia 🇨🇱',
+    ],
+    12: [
+      '🎄 Feliz Navidad, que este mes cierre con broche de oro',
+      '¡Que el espiritu navideno te acompane en cada visita! 🎅',
+      'Un fin de ano de excelentes resultados para ti y tu familia 🎆',
+      '🎁 Diciembre es para cerrar el ano arriba, sigue asi',
+    ],
+  };
+  var FRASES_MES = FRASES.concat(FRASES_ESPECIALES[new Date().getMonth() + 1] || []);
   var clicks = 0, clickTimer = null;
 
   function mostrarToast(texto) {
@@ -1071,7 +1164,7 @@ if (keyGuardada && DATA.tecnicos[keyGuardada]) {
         for (var i = 0; i < restantes.length; i++) restantes[i].remove();
         overlay.innerHTML = '<button class="eg-cerrar">✕</button>'
           + '<div class="easter-game-final">🎉 Puntaje final: ' + score + ' estrellas<br>'
-          + '<span style="font-size:14px;font-weight:400;">' + FRASES[Math.floor(Math.random() * FRASES.length)] + '</span><br>'
+          + '<span style="font-size:14px;font-weight:400;">' + FRASES_MES[Math.floor(Math.random() * FRASES_MES.length)] + '</span><br>'
           + '<button id="egCerrarFinal">Cerrar</button></div>';
         overlay.querySelector('#egCerrarFinal').addEventListener('click', function () { overlay.remove(); });
         overlay.querySelector('.eg-cerrar').addEventListener('click', function () { overlay.remove(); });
@@ -1090,7 +1183,7 @@ if (keyGuardada && DATA.tecnicos[keyGuardada]) {
     logo.addEventListener('click', function (e) {
       clicks++;
       lanzarEmojis(e.clientX, e.clientY);
-      mostrarToast(FRASES[Math.floor(Math.random() * FRASES.length)]);
+      mostrarToast(FRASES_MES[Math.floor(Math.random() * FRASES_MES.length)]);
       clearTimeout(clickTimer);
       clickTimer = setTimeout(function () { clicks = 0; }, 3000);
       if (clicks >= 5) {
