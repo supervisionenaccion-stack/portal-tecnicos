@@ -565,7 +565,18 @@ function generarHtml(DATA) {
     background:radial-gradient(circle, rgba(41,169,224,0.18), transparent 70%);
   }
   .brand-row{ display:flex; align-items:center; gap:18px; margin-bottom:22px; }
-  .brand-row img{ height:46px; }
+  .brand-row img{ height:46px; cursor:pointer; }
+  .easter-toast{ position:fixed; left:50%; bottom:30px; transform:translateX(-50%) translateY(20px); background:var(--cobra-navy); color:#fff; padding:12px 22px; border-radius:30px; font-size:14px; font-weight:700; box-shadow:0 8px 24px rgba(0,60,113,.3); opacity:0; transition:opacity .25s ease, transform .25s ease; z-index:9999; pointer-events:none; white-space:nowrap; }
+  .easter-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .easter-emoji{ position:fixed; font-size:22px; pointer-events:none; z-index:9999; animation:easterFloat 1.1s ease-out forwards; }
+  @keyframes easterFloat{ 0%{ transform:translate(0,0) scale(.6); opacity:1; } 100%{ transform:translate(var(--dx),-90px) scale(1.3); opacity:0; } }
+  .easter-game-overlay{ position:fixed; inset:0; background:rgba(10,20,35,.85); z-index:10000; color:#fff; text-align:center; overflow:hidden; }
+  .easter-game-overlay .eg-cerrar{ position:absolute; top:18px; right:22px; background:none; border:none; color:#fff; font-size:26px; cursor:pointer; }
+  .easter-game-hud{ position:absolute; top:20px; left:22px; font-size:15px; font-weight:700; }
+  .easter-game-titulo{ position:absolute; top:60px; left:0; right:0; font-size:15px; }
+  .easter-star{ position:absolute; font-size:30px; cursor:pointer; user-select:none; }
+  .easter-game-final{ position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:20px; font-weight:800; }
+  .easter-game-final button{ margin-top:16px; padding:10px 22px; border-radius:20px; border:none; background:var(--celeste); color:var(--cobra-navy); font-weight:800; cursor:pointer; font-size:14px; }
   .brand-divider{ width:1px; height:34px; background:var(--border); }
   .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12.5px; color:var(--celeste); font-weight:800; }
   h1{ margin:0 0 6px; font-size:clamp(24px,4vw,34px); font-weight:800; letter-spacing:-0.01em; color:var(--cobra-navy); }
@@ -964,6 +975,119 @@ const keyGuardada = sessionStorage.getItem('portalTecnicoKey');
 if (keyGuardada && DATA.tecnicos[keyGuardada]) {
   mostrarPerfil(DATA.tecnicos[keyGuardada]);
 }
+
+// ---- Easter egg: click en el logo ----
+(function () {
+  var FRASES = [
+    '¡Vas por buen camino! 💪',
+    'Cada reparacion cuenta, sigue asi 🔧',
+    'Hoy es un gran dia para superar tu meta ⭐',
+    'El equipo esta orgulloso de tu trabajo 🙌',
+    'Un dia a la vez, vas mejorando 📈',
+    'Gracias por dejar todo en cada visita 🚀',
+    'Tu esfuerzo se nota, sigue asi 🌟',
+    'Pequenos pasos, grandes resultados 🏆',
+  ];
+  var clicks = 0, clickTimer = null;
+
+  function mostrarToast(texto) {
+    var t = document.createElement('div');
+    t.className = 'easter-toast';
+    t.textContent = texto;
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(function () {
+      t.classList.remove('show');
+      setTimeout(function () { t.remove(); }, 300);
+    }, 2200);
+  }
+
+  function lanzarEmojis(x, y) {
+    var emojis = ['✨', '⭐', '🎉', '💙'];
+    for (var i = 0; i < 6; i++) {
+      var e = document.createElement('div');
+      e.className = 'easter-emoji';
+      e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      e.style.left = x + 'px';
+      e.style.top = y + 'px';
+      e.style.setProperty('--dx', (Math.random() * 140 - 70) + 'px');
+      document.body.appendChild(e);
+      (function (el) { setTimeout(function () { el.remove(); }, 1200); })(e);
+    }
+  }
+
+  function iniciarMiniJuego() {
+    var overlay = document.createElement('div');
+    overlay.className = 'easter-game-overlay';
+    overlay.innerHTML = '<button class="eg-cerrar">✕</button>'
+      + '<div class="easter-game-hud">⭐ Puntaje: <span id="egScore">0</span> · ⏱ <span id="egTime">15</span>s</div>'
+      + '<div class="easter-game-titulo">¡Atrapa las estrellas!</div>';
+    document.body.appendChild(overlay);
+
+    var score = 0, tiempo = 15;
+    var scoreEl = overlay.querySelector('#egScore');
+    var timeEl = overlay.querySelector('#egTime');
+
+    var spawnInt = setInterval(function () {
+      var star = document.createElement('div');
+      star.className = 'easter-star';
+      star.textContent = '⭐';
+      star.style.left = (Math.random() * 80 + 5) + '%';
+      star.style.top = '-40px';
+      overlay.appendChild(star);
+      var posY = -40;
+      var fall = setInterval(function () {
+        posY += 4;
+        star.style.top = posY + 'px';
+        if (posY > window.innerHeight) { star.remove(); clearInterval(fall); }
+      }, 16);
+      star.onclick = function () {
+        score++;
+        scoreEl.textContent = score;
+        clearInterval(fall);
+        star.remove();
+      };
+    }, 550);
+
+    var timeInt = setInterval(function () {
+      tiempo--;
+      timeEl.textContent = tiempo;
+      if (tiempo <= 0) {
+        clearInterval(spawnInt);
+        clearInterval(timeInt);
+        var restantes = overlay.querySelectorAll('.easter-star');
+        for (var i = 0; i < restantes.length; i++) restantes[i].remove();
+        overlay.innerHTML = '<button class="eg-cerrar">✕</button>'
+          + '<div class="easter-game-final">🎉 Puntaje final: ' + score + ' estrellas<br>'
+          + '<span style="font-size:14px;font-weight:400;">' + FRASES[Math.floor(Math.random() * FRASES.length)] + '</span><br>'
+          + '<button id="egCerrarFinal">Cerrar</button></div>';
+        overlay.querySelector('#egCerrarFinal').addEventListener('click', function () { overlay.remove(); });
+        overlay.querySelector('.eg-cerrar').addEventListener('click', function () { overlay.remove(); });
+      }
+    }, 1000);
+
+    overlay.querySelector('.eg-cerrar').addEventListener('click', function () {
+      clearInterval(spawnInt);
+      clearInterval(timeInt);
+      overlay.remove();
+    });
+  }
+
+  var logo = document.querySelector('.brand-row img');
+  if (logo) {
+    logo.addEventListener('click', function (e) {
+      clicks++;
+      lanzarEmojis(e.clientX, e.clientY);
+      mostrarToast(FRASES[Math.floor(Math.random() * FRASES.length)]);
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(function () { clicks = 0; }, 3000);
+      if (clicks >= 5) {
+        clicks = 0;
+        iniciarMiniJuego();
+      }
+    });
+  }
+})();
 </script>
 
 <script>
