@@ -574,7 +574,7 @@ function generarHtml(DATA) {
   .easter-game-overlay .eg-cerrar{ position:absolute; top:18px; right:22px; background:none; border:none; color:#fff; font-size:26px; cursor:pointer; }
   .easter-game-hud{ position:absolute; top:20px; left:22px; font-size:15px; font-weight:700; }
   .easter-game-titulo{ position:absolute; top:60px; left:0; right:0; font-size:15px; }
-  .easter-star{ position:absolute; font-size:30px; cursor:pointer; user-select:none; }
+  .easter-star{ position:absolute; width:56px; height:56px; display:flex; align-items:center; justify-content:center; font-size:32px; cursor:pointer; user-select:none; }
   .easter-game-final{ position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:20px; font-weight:800; }
   .easter-game-final button{ margin-top:16px; padding:10px 22px; border-radius:20px; border:none; background:var(--celeste); color:var(--cobra-navy); font-weight:800; cursor:pointer; font-size:14px; }
   .brand-divider{ width:1px; height:34px; background:var(--border); }
@@ -1037,7 +1037,7 @@ if (keyGuardada && DATA.tecnicos[keyGuardada]) {
       overlay.appendChild(star);
       var posY = -40;
       var fall = setInterval(function () {
-        posY += 4;
+        posY += 2;
         star.style.top = posY + 'px';
         if (posY > window.innerHeight) { star.remove(); clearInterval(fall); }
       }, 16);
