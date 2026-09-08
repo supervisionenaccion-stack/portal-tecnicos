@@ -574,7 +574,7 @@ function generarHtml(DATA) {
   .easter-game-overlay .eg-cerrar{ position:absolute; top:18px; right:22px; background:none; border:none; color:#fff; font-size:26px; cursor:pointer; }
   .easter-game-hud{ position:absolute; top:20px; left:22px; font-size:15px; font-weight:700; }
   .easter-game-titulo{ position:absolute; top:60px; left:0; right:0; font-size:15px; }
-  .easter-star{ position:absolute; width:56px; height:56px; display:flex; align-items:center; justify-content:center; font-size:32px; cursor:pointer; user-select:none; }
+  .easter-star{ position:absolute; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:26px; cursor:pointer; user-select:none; }
   .easter-game-final{ position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:20px; font-weight:800; }
   .easter-game-final button{ margin-top:16px; padding:10px 22px; border-radius:20px; border:none; background:var(--celeste); color:var(--cobra-navy); font-weight:800; cursor:pointer; font-size:14px; }
   .brand-divider{ width:1px; height:34px; background:var(--border); }
@@ -987,6 +987,18 @@ if (keyGuardada && DATA.tecnicos[keyGuardada]) {
     'Gracias por dejar todo en cada visita 🚀',
     'Tu esfuerzo se nota, sigue asi 🌟',
     'Pequenos pasos, grandes resultados 🏆',
+    'Lo que haces hoy suma para todo el equipo 🤝',
+    'Cada visita es una oportunidad de brillar ✨',
+    'Tu trabajo mejora la conexion de muchas familias 📶',
+    'La constancia gana, sigue enfocado 🎯',
+    'Buen trabajo no siempre se ve, pero siempre se nota 👏',
+    'Eres parte clave del equipo COBRA 🔵',
+    'Sigue asi, los resultados van a llegar 🚀',
+    'Un cliente satisfecho es la mejor recompensa 😊',
+    'Nunca es tarde para un gran dia 🌅',
+    'Confiamos en tu criterio y experiencia 🛠️',
+    'Cada reto es una oportunidad de aprender 📚',
+    'Tu actitud hace la diferencia 🔥',
   ];
   var clicks = 0, clickTimer = null;
 
@@ -1037,7 +1049,7 @@ if (keyGuardada && DATA.tecnicos[keyGuardada]) {
       overlay.appendChild(star);
       var posY = -40;
       var fall = setInterval(function () {
-        posY += 2;
+        posY += 3;
         star.style.top = posY + 'px';
         if (posY > window.innerHeight) { star.remove(); clearInterval(fall); }
       }, 16);
