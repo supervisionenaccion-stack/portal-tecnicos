@@ -22,6 +22,16 @@ const carpetaBbdd = path.join(carpeta, '..', 'bbdd');
 const META_REINCIDENCIA = 0.04;
 const META_INFANCIA = 0.025;
 
+// Tecnicos desvinculados: no se les asigna login (no pueden entrar al
+// Portal), pero su trabajo pasado se sigue contando en los promedios y
+// rankings del equipo -- se excluyen recien al armar el login, no antes.
+// Agregar el nombre completo exacto tal como aparece en los reportes (la
+// comparacion es insensible a mayusculas/acentos).
+const DESVINCULADOS = [
+  'JOAN JOEL HERNANDEZ AMAYA',
+  'LUCAS RENATO SERON VELASQUEZ',
+];
+
 function encontrarCsv(prefijoRegex) {
   if (!fs.existsSync(carpetaBbdd)) {
     throw new Error('No existe la carpeta bbdd en ' + path.join(carpeta, '..'));
@@ -384,12 +394,19 @@ async function main() {
   const npsData = cargarNpsTecnicos();
   asignarNps(personas, npsData);
 
-  // Asignar el login (nombre corto) a cada persona. Si dos personas DISTINTAS
-  // comparten el mismo nombre corto, se le agrega " 2", " 3"... a partir de la
-  // segunda (ordenadas por nombre completo, para que el resultado sea estable
-  // entre corridas) y se alerta bien visible para que se le avise al tecnico.
+  // Asignar el login (nombre corto) a cada persona que siga vinculada. Si dos
+  // personas DISTINTAS comparten el mismo nombre corto, se le agrega " 2",
+  // " 3"... a partir de la segunda (ordenadas por nombre completo, para que
+  // el resultado sea estable entre corridas) y se alerta bien visible para
+  // que se le avise al tecnico.
+  const personasConLogin = personas.filter((p) => !DESVINCULADOS.includes(normalizarTexto(p.nombre)));
+  const desvinculadosEncontrados = personas.filter((p) => DESVINCULADOS.includes(normalizarTexto(p.nombre)));
+  if (desvinculadosEncontrados.length) {
+    console.log('Tecnicos desvinculados excluidos del login (' + desvinculadosEncontrados.length + '):', desvinculadosEncontrados.map((p) => p.nombre).join(', '));
+  }
+
   const grupos = {};
-  personas.forEach((p) => {
+  personasConLogin.forEach((p) => {
     const base = loginKey(p.nombre);
     if (!grupos[base]) grupos[base] = [];
     grupos[base].push(p);
