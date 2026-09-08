@@ -586,9 +586,13 @@ function generarHtml(DATA) {
   .estado-pill.bad{ background:var(--detractor-bg); color:var(--detractor); }
 
   .barra-wrap{ margin:10px 0 16px; }
+  .barra-valor-linea{ margin-bottom:22px; }
+  .barra-valor-linea .valor-num{ font-size:20px; font-weight:800; }
+  .barra-valor-linea .valor-num.ok{ color:var(--promotor); }
+  .barra-valor-linea .valor-num.warn{ color:var(--neutro); }
+  .barra-valor-linea .valor-num.bad{ color:var(--detractor); }
   .barra-track{ position:relative; height:22px; background:var(--panel-2); border-radius:11px; overflow:visible; }
-  .barra-fill{ position:absolute; left:0; top:0; bottom:0; border-radius:11px; display:flex; align-items:center; justify-content:flex-end; padding-right:10px; }
-  .barra-fill span{ font-size:11.5px; font-weight:800; color:#fff; white-space:nowrap; }
+  .barra-fill{ position:absolute; left:0; top:0; bottom:0; border-radius:11px; }
   .barra-fill.ok{ background:var(--promotor); }
   .barra-fill.warn{ background:var(--neutro); }
   .barra-fill.bad{ background:var(--detractor); }
@@ -711,8 +715,9 @@ function barraNps(nps, meta, cls) {
   const anchoNps = posicion(nps);
   const posMeta = posicion(meta);
   return '<div class="barra-wrap">'
+    + '<div class="barra-valor-linea"><span class="valor-num ' + cls + '">' + nps + '%</span></div>'
     + '<div class="barra-track">'
-    + '<div class="barra-fill ' + cls + '" style="width:' + anchoNps.toFixed(1) + '%"><span>' + nps + '%</span></div>'
+    + '<div class="barra-fill ' + cls + '" style="width:' + anchoNps.toFixed(1) + '%"></div>'
     + '<div class="barra-meta" style="left:' + posMeta.toFixed(1) + '%"></div>'
     + '<div class="barra-meta-label" style="left:' + posMeta.toFixed(1) + '%">Meta ' + meta + '%</div>'
     + '</div></div>';
@@ -758,8 +763,9 @@ function barraTasa(tasa, meta, cls) {
   const anchoTasa = Math.min(100, (tasa / escala) * 100);
   const posMeta = Math.min(100, (meta / escala) * 100);
   return '<div class="barra-wrap">'
+    + '<div class="barra-valor-linea"><span class="valor-num ' + cls + '">' + tasa + '%</span></div>'
     + '<div class="barra-track">'
-    + '<div class="barra-fill ' + cls + '" style="width:' + anchoTasa.toFixed(1) + '%"><span>' + tasa + '%</span></div>'
+    + '<div class="barra-fill ' + cls + '" style="width:' + anchoTasa.toFixed(1) + '%"></div>'
     + '<div class="barra-meta" style="left:' + posMeta.toFixed(1) + '%"></div>'
     + '<div class="barra-meta-label" style="left:' + posMeta.toFixed(1) + '%">Meta ' + meta + '%</div>'
     + '</div></div>';
