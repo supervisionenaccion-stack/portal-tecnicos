@@ -215,7 +215,7 @@ function analizarReincidencias(csvPath) {
     if (!porRut[rut]) {
       porRut[rut] = {
         rut, nombre, agencia: (r['toa_piv_agencia'] || '').trim(), clave: ultimos4DigitosRut(r['toa_piv_rut_tecnico']),
-        total: 0, reincidencias: 0, dias: [], causas: {},
+        total: 0, reincidencias: 0, dias: [], causas: {}, casos: [],
       };
     }
     porRut[rut].total += 1;
@@ -225,6 +225,14 @@ function analizarReincidencias(csvPath) {
       if (!Number.isNaN(dias)) porRut[rut].dias.push(dias);
       const causa = (r['toa_piv_causa'] || '').trim() || '(sin dato)';
       porRut[rut].causas[causa] = (porRut[rut].causas[causa] || 0) + 1;
+      // Solo folio/fecha/causa/dias -- SIN direccion ni telefono del cliente
+      // (esos campos existen en el CSV pero no se publican, es info de terceros).
+      porRut[rut].casos.push({
+        folio: (r['toa_piv_folio_toa'] || '').trim(),
+        fecha: (r['toa_piv_fecha_ingreso'] || '').trim().slice(0, 10),
+        causa,
+        dias: !Number.isNaN(dias) ? dias : null,
+      });
     }
   });
 
@@ -274,7 +282,7 @@ function analizarInfancia(csvPath) {
     if (!porRut[rut]) {
       porRut[rut] = {
         rut, nombre, agencia: (r['toa_xa_original_agency'] || '').trim(), clave: ultimos4DigitosRut(r['toa_provider_external_id']),
-        total: 0, reincidencias: 0, dias: [], causas: {}, mismoTotal: 0, mismoSi: 0,
+        total: 0, reincidencias: 0, dias: [], causas: {}, casos: [], mismoTotal: 0, mismoSi: 0,
       };
     }
     porRut[rut].total += 1;
@@ -284,6 +292,14 @@ function analizarInfancia(csvPath) {
       if (!Number.isNaN(dias)) porRut[rut].dias.push(dias);
       const causa = (r['rmdy_causa'] || '').trim() || '(sin dato)';
       porRut[rut].causas[causa] = (porRut[rut].causas[causa] || 0) + 1;
+      // Solo folio/fecha/causa/dias -- SIN direccion ni telefono del cliente
+      // (esos campos existen en el CSV pero no se publican, es info de terceros).
+      porRut[rut].casos.push({
+        folio: (r['toa_appt_number'] || '').trim(),
+        fecha: (r['rmdy_fecha_creacion_repara'] || '').trim().slice(0, 10),
+        causa,
+        dias: !Number.isNaN(dias) ? dias : null,
+      });
       porRut[rut].mismoTotal += 1;
       if (r['rmdy_nombre_tecnico'] === r['toa_provider_name']) porRut[rut].mismoSi += 1;
     }
@@ -303,6 +319,7 @@ function terminarAnalisis(porRut) {
       diasMediana: t.dias.length ? mediana(t.dias) : null,
       causaFrecuente: causaFrecuente ? causaFrecuente[0] : null,
       causaFrecuenteCasos: causaFrecuente ? causaFrecuente[1] : 0,
+      casos: (t.casos || []).slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')),
       mismoTotal: t.mismoTotal, mismoSi: t.mismoSi,
       mismoPct: t.mismoTotal ? +((t.mismoSi / t.mismoTotal) * 100).toFixed(1) : null,
     };
@@ -353,13 +370,13 @@ async function main() {
         total: r.total, reincidencias: r.reincidencias, tasa: +(r.tasa * 100).toFixed(1),
         ranking: r.ranking || null, rankingTotal: r.rankingTotal || null,
         diasPromedio: r.diasPromedio, causaFrecuente: r.causaFrecuente, causaFrecuenteCasos: r.causaFrecuenteCasos,
-        mismoPct: r.mismoPct,
+        mismoPct: r.mismoPct, casos: r.casos || [],
       } : null,
       infancia: i ? {
         total: i.total, reincidencias: i.reincidencias, tasa: +(i.tasa * 100).toFixed(1),
         ranking: i.ranking || null, rankingTotal: i.rankingTotal || null,
         diasPromedio: i.diasPromedio, causaFrecuente: i.causaFrecuente, causaFrecuenteCasos: i.causaFrecuenteCasos,
-        mismoPct: i.mismoPct,
+        mismoPct: i.mismoPct, casos: i.casos || [],
       } : null,
     };
   });
@@ -608,6 +625,11 @@ function generarHtml(DATA) {
   .fila-dato{ display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:13px; }
   .fila-dato .k{ color:var(--text-dim); }
   .fila-dato .v{ font-weight:700; color:var(--text); text-align:right; }
+  .tabla-casos-wrap{ margin-top:14px; overflow-x:auto; }
+  .tabla-casos{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .tabla-casos th{ text-align:left; padding:6px 8px; color:var(--text-dim); font-weight:700; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .tabla-casos td{ padding:6px 8px; border-bottom:1px solid var(--panel-2); white-space:nowrap; }
+  .tabla-casos td.causa{ white-space:normal; min-width:160px; }
 
   .callout{ border-left:3px solid var(--celeste); background:linear-gradient(90deg, var(--celeste-soft), transparent); padding:12px 16px; border-radius:0 10px 10px 0; font-size:13px; color:#2c3e50; line-height:1.55; margin-top:14px; }
   .sin-datos{ color:var(--text-dim); font-size:13.5px; font-style:italic; }
@@ -773,6 +795,18 @@ function barraTasa(tasa, meta, cls) {
 
 let contadorDetalle = 0;
 
+// Tabla de casos individuales (folio, fecha, causa, dias) -- SIN direccion ni
+// telefono del cliente, esos datos no se publican en el sitio.
+function tablaCasos(casos) {
+  if (!casos || casos.length === 0) return '';
+  const filas = casos.map((c) =>
+    '<tr><td>' + (c.folio || '-') + '</td><td>' + (c.fecha || '-') + '</td><td class="causa">' + (c.causa || '-') + '</td><td>' + (c.dias != null ? c.dias + 'd' : '-') + '</td></tr>'
+  ).join('');
+  return '<div class="tabla-casos-wrap"><table class="tabla-casos">'
+    + '<thead><tr><th>Folio</th><th>Fecha</th><th>Causa</th><th>Dias</th></tr></thead>'
+    + '<tbody>' + filas + '</tbody></table></div>';
+}
+
 function bloqueReporte(opts) {
   const { icono, titulo, explicacion, meta, promedioEquipo, datos, fraseFormula } = opts;
   if (!datos) {
@@ -834,6 +868,7 @@ function bloqueReporte(opts) {
   if (datos.mismoPct != null) {
     html += '<div class="fila-dato"><span class="k">% que tu mismo corregiste de nuevo</span><span class="v">' + datos.mismoPct + '%</span></div>';
   }
+  html += tablaCasos(datos.casos);
   html += '</div>';
   return html;
 }
