@@ -146,7 +146,7 @@ function cargarDatosDeArchivo(nombreArchivo) {
   if (!fs.existsSync(p)) return null;
   try {
     const html = fs.readFileSync(p, 'utf8');
-    const m = html.match(/const DATA = (\{[\s\S]*?\});\n\nfunction normalizarTexto/);
+    const m = html.match(/const DATA = (\{[\s\S]*?\});\r?\n\r?\nfunction normalizarTexto/);
     if (!m) return null;
     return JSON.parse(m[1]);
   } catch (err) {
