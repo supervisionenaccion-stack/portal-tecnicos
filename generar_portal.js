@@ -19,8 +19,10 @@ const ExcelJS = require('exceljs');
 
 const carpeta = __dirname;
 const carpetaBbdd = path.join(carpeta, '..', 'bbdd');
+const carpetaBaremos = path.join(carpeta, '..', 'baremosTigo');
 const META_REINCIDENCIA = 0.04;
 const META_INFANCIA = 0.025;
+const META_PRODUCTIVIDAD = 5; // productos por dia trabajado (mas alto es mejor)
 
 // Tecnicos desvinculados: no se les asigna login (no pueden entrar al
 // Portal), pero su trabajo pasado se sigue contando en los promedios y
@@ -168,6 +170,69 @@ function cargarNpsTecnicos() {
     return JSON.parse(fs.readFileSync(npsPath, 'utf8'));
   } catch (err) {
     console.log('AVISO: no se pudo leer nps-tecnicos.json (' + err.message + ') -- el portal se genera sin datos de NPS.');
+    return null;
+  }
+}
+
+// Lee la productividad de cada tecnico desde el INF-09 (produccion de Punta
+// Arenas + Coyhaique) que copiamos a ../baremosTigo con copiar_baremos.bat.
+// Cruce por RUT. Suma productos de Instala y de Repara por separado y cuenta
+// los dias distintos trabajados. Devuelve { mapa por RUT normalizado, periodo }.
+async function cargarProductividad() {
+  if (!fs.existsSync(carpetaBaremos)) {
+    console.log('AVISO: no existe la carpeta baremosTigo -- el portal se genera sin productividad.');
+    return null;
+  }
+  const cand = fs.readdirSync(carpetaBaremos)
+    .filter((f) => /^INF-09.*\.xlsx$/i.test(f) && !f.startsWith('~$'))
+    .map((f) => ({ f, m: fs.statSync(path.join(carpetaBaremos, f)).mtimeMs }))
+    .sort((a, b) => b.m - a.m)[0];
+  if (!cand) {
+    console.log('AVISO: no se encontro ningun INF-09*.xlsx en baremosTigo -- el portal se genera sin productividad.');
+    return null;
+  }
+  try {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.readFile(path.join(carpetaBaremos, cand.f));
+    const ws = wb.getWorksheet('BASE_MES_ PUNTA_ARENAS');
+    if (!ws) throw new Error('no se encontro la hoja "BASE_MES_ PUNTA_ARENAS"');
+
+    // Columnas: 1 Folio | 5 Nro Productos | 6 RUT | 10 Dia | 14 Tipo (Instala/Repara)
+    const porRut = {};
+    for (let i = 2; i <= ws.rowCount; i++) {
+      const row = ws.getRow(i);
+      if (!row.getCell(1).value) continue;
+      const rut = rutInterno(row.getCell(6).value);
+      if (!rut) continue;
+      const prod = Number(row.getCell(5).value) || 0;
+      const tipo = (row.getCell(14).value || '').toString().trim();
+      const dia = Number(row.getCell(10).value);
+      if (!porRut[rut]) porRut[rut] = { instala: 0, repara: 0, dias: new Set() };
+      if (tipo === 'Instala') porRut[rut].instala += prod;
+      else if (tipo === 'Repara') porRut[rut].repara += prod;
+      if (Number.isFinite(dia)) porRut[rut].dias.add(dia);
+    }
+
+    const mapa = {};
+    Object.entries(porRut).forEach(([rut, x]) => {
+      const total = +(x.instala + x.repara).toFixed(2);
+      const dias = x.dias.size;
+      mapa[rut] = {
+        instala: +x.instala.toFixed(2),
+        repara: +x.repara.toFixed(2),
+        total,
+        dias,
+        prodDia: dias ? +(total / dias).toFixed(2) : null,
+      };
+    });
+
+    // Periodo: se saca del nombre del archivo ("... Septiembre 2026.xlsx").
+    const m = cand.f.match(/(Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre)\s+(\d{4})/i);
+    const periodo = m ? (m[1] + ' ' + m[2]) : null;
+    console.log('Productividad cargada desde', cand.f, '(' + Object.keys(mapa).length + ' tecnicos)');
+    return { mapa, periodo };
+  } catch (err) {
+    console.log('AVISO: no se pudo leer la productividad (' + err.message + ') -- el portal se genera sin productividad.');
     return null;
   }
 }
@@ -397,6 +462,9 @@ async function main() {
   const rutsTodos = new Set([...Object.keys(reincidencias.mapa), ...Object.keys(infancia.mapa)]);
   console.log('Tecnicos con datos:', rutsTodos.size);
 
+  const prodData = await cargarProductividad();
+  const prodMapa = prodData ? prodData.mapa : {};
+
   // Busca el dato del tecnico en el mes anterior por nombre corto (esa BBDD
   // ya no tiene RUT, se descarto al publicarse). Aproximado pero razonable:
   // las colisiones de nombre corto son raras y esto es solo informativo.
@@ -427,6 +495,7 @@ async function main() {
         diasPromedio: i.diasPromedio, causaFrecuente: i.causaFrecuente, causaFrecuenteCasos: i.causaFrecuenteCasos,
         mismoPct: i.mismoPct, casos: i.casos || [], tasaAnterior: tasaAnteriorDe(nombre, 'infancia'),
       } : null,
+      productividad: prodMapa[rut] || null,
     };
   });
 
@@ -497,6 +566,8 @@ async function main() {
     promedioEquipoInfancia: infancia.promedioEquipo != null ? +(infancia.promedioEquipo * 100).toFixed(1) : null,
     metaNps: npsData ? npsData.meta : null,
     periodoNps: npsData ? npsData.periodo : null,
+    metaProductividad: META_PRODUCTIVIDAD,
+    periodoProductividad: prodData ? prodData.periodo : null,
     labelMesAnterior,
     tecnicos,
   };
@@ -752,6 +823,7 @@ function generarHtml(DATA) {
     <div class="report-card panel" id="seccionReincidencias"></div>
     <div class="report-card panel" id="seccionInfancia"></div>
     <div class="report-card panel" id="seccionNps"></div>
+    <div class="report-card panel" id="seccionProductividad"></div>
 
     <div class="report-card panel" id="seccionArchivos">
       <div class="cabecera"><span class="icono">📁</span><h2>Archivos compartidos <span id="badgeArchivosNuevo" class="badge-nuevo" hidden>🆕 nuevo</span></h2></div>
@@ -846,6 +918,48 @@ function bloqueNps(t) {
   html += '<div class="fila-dato"><span class="k">Promotores</span><span class="v">' + datos.promotores + '</span></div>';
   html += '<div class="fila-dato"><span class="k">Neutros</span><span class="v">' + datos.neutros + '</span></div>';
   html += '<div class="fila-dato"><span class="k">Detractores</span><span class="v">' + datos.detractores + '</span></div>';
+  html += '</div>';
+  return html;
+}
+
+// Productividad: productos por dia trabajado. Mas alto es mejor (meta 5/dia).
+function estadoProductividad(prodDia, meta) {
+  if (prodDia >= meta) return { emoji: '✅', texto: 'Cumples la meta', clase: 'ok' };
+  if (prodDia >= meta * 0.8) return { emoji: '⚠️', texto: 'Cerca de la meta', clase: 'warn' };
+  return { emoji: '🔴', texto: 'Bajo la meta', clase: 'bad' };
+}
+
+function bloqueProductividad(t) {
+  const icono = '📦', titulo = 'Productividad';
+  const periodoTexto = DATA.periodoProductividad ? (' Datos de ' + DATA.periodoProductividad + '.') : '';
+  const explicacion = 'Cantidad de productos (servicios) que dejaste listos este mes y tu promedio por dia trabajado.' + periodoTexto + ' Mientras mas alto, mejor.';
+  if (!t.productividad) {
+    return '<div class="cabecera"><span class="icono">' + icono + '</span><h2>' + titulo + '</h2></div>'
+      + '<p class="explica">' + explicacion + '</p>'
+      + '<p class="sin-datos">No hay datos de productividad para ti en este periodo.</p>';
+  }
+  const p = t.productividad;
+  const meta = DATA.metaProductividad;
+  const est = estadoProductividad(p.prodDia, meta);
+  const cumpleFrase = p.prodDia >= meta
+    ? 'Tu productividad (<b>' + p.prodDia + '</b> productos/dia) cumple la meta (' + meta + '/dia).'
+    : 'Tu productividad (<b>' + p.prodDia + '</b> productos/dia) esta <b>bajo la meta</b> (' + meta + '/dia) — te faltan ' + (meta - p.prodDia).toFixed(2) + ' por dia.';
+
+  contadorDetalle++;
+  const idDetalle = 'detalle' + contadorDetalle;
+
+  let html = '<div class="cabecera"><span class="icono">' + icono + '</span><h2>' + titulo + '</h2></div>';
+  html += '<p class="explica">' + explicacion + '</p>';
+  html += '<div class="estado-pill ' + est.clase + '">' + est.emoji + ' ' + est.texto + '</div>';
+  html += '<p class="frase-clave">Cerraste <b>' + p.total + '</b> productos en <b>' + p.dias + '</b> dias trabajados.</p>';
+  html += '<p class="frase-clave">' + cumpleFrase + '</p>';
+  html += '<div class="detalle-toggle" onclick="toggleDetalle(\\'' + idDetalle + '\\')">Ver el detalle en numeros <span id="' + idDetalle + 'Flecha">▾</span></div>';
+  html += '<div class="detalle-body" id="' + idDetalle + '">';
+  html += '<div class="fila-dato"><span class="k">Instala</span><span class="v">' + p.instala + '</span></div>';
+  html += '<div class="fila-dato"><span class="k">Repara</span><span class="v">' + p.repara + '</span></div>';
+  html += '<div class="fila-dato"><span class="k">Total productos</span><span class="v">' + p.total + '</span></div>';
+  html += '<div class="fila-dato"><span class="k">Dias trabajados</span><span class="v">' + p.dias + '</span></div>';
+  html += '<div class="fila-dato"><span class="k">Productos por dia</span><span class="v">' + p.prodDia + '</span></div>';
   html += '</div>';
   return html;
 }
@@ -1002,6 +1116,7 @@ function mostrarPerfil(t) {
     fraseFormula: 'instalaciones que hiciste',
   });
   document.getElementById('seccionNps').innerHTML = bloqueNps(t);
+  document.getElementById('seccionProductividad').innerHTML = bloqueProductividad(t);
 
   // Aviso de archivos "nuevos": no hay forma de saber si de verdad se agrego
   // un archivo nuevo a la carpeta de Drive (no hay API conectada), asi que se
