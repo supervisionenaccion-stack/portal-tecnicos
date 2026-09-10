@@ -621,7 +621,7 @@ function generarHtml(DATA) {
   .eyebrow{ text-transform:uppercase; letter-spacing:.14em; font-size:12.5px; color:var(--celeste); font-weight:800; }
   h1{ margin:0 0 6px; font-size:clamp(24px,4vw,34px); font-weight:800; letter-spacing:-0.01em; color:var(--cobra-navy); }
   .subtitle{ color:#3a4a5c; font-size:14.5px; max-width:640px; line-height:1.55; }
-  .archive-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:16px; }
+  .archive-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 20px; }
   .archive-row .archive-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; color:var(--text-dim); margin-right:2px; }
   .archive-pill{ display:inline-block; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border); color:var(--cobra-navy); background:#fff; transition:background .15s ease; }
   .archive-pill:hover{ background:var(--celeste-soft); }
@@ -715,7 +715,6 @@ function generarHtml(DATA) {
   </div>
   <h1 id="heroTitle">Mis Indicadores</h1>
   <div class="subtitle" id="heroSubtitle">Aca puedes ver, de forma simple, como te va este mes y en que puedes enfocarte para mejorar.</div>
-  <div class="archive-row" id="archiveRow"></div>
 </header>
 
 <main>
@@ -745,6 +744,8 @@ function generarHtml(DATA) {
       <button id="logoutBtn">Cerrar sesion</button>
     </div>
     <p class="intro-personal">Este es tu reporte personal de calidad. Te mostramos como te va este mes con tus reparaciones, y en que puedes enfocarte para mejorar.</p>
+
+    <div class="archive-row" id="archiveRow"></div>
 
     <div id="resumenGeneral"></div>
 
