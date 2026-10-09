@@ -174,8 +174,9 @@ function cargarNpsTecnicos() {
   }
 }
 
-// Lee la productividad de cada tecnico desde el INF-09 (produccion de Punta
-// Arenas + Coyhaique) que copiamos a ../baremosTigo con copiar_baremos.bat.
+// Lee la productividad de cada tecnico desde el INF del mes mas reciente
+// (INF-09 = Septiembre, INF-10 = Octubre...; produccion de Punta Arenas +
+// Coyhaique) que copiamos a ../baremosTigo con copiar_baremos.bat.
 // Cruce por RUT. Suma productos de Instala y de Repara por separado y cuenta
 // los dias distintos trabajados. Devuelve { mapa por RUT normalizado, periodo }.
 async function cargarProductividad() {
@@ -183,12 +184,17 @@ async function cargarProductividad() {
     console.log('AVISO: no existe la carpeta baremosTigo -- el portal se genera sin productividad.');
     return null;
   }
+  const MESES_INF = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const claveInf = (f) => {
+    const m = f.match(/(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{4})/i);
+    return m ? Number(m[2]) * 100 + MESES_INF.indexOf(m[1].toLowerCase()) + 1 : 0;
+  };
   const cand = fs.readdirSync(carpetaBaremos)
-    .filter((f) => /^INF-09.*\.xlsx$/i.test(f) && !f.startsWith('~$'))
-    .map((f) => ({ f, m: fs.statSync(path.join(carpetaBaremos, f)).mtimeMs }))
-    .sort((a, b) => b.m - a.m)[0];
+    .filter((f) => /^INF-\d+.*\.xlsx$/i.test(f) && !f.startsWith('~$'))
+    .map((f) => ({ f, k: claveInf(f), m: fs.statSync(path.join(carpetaBaremos, f)).mtimeMs }))
+    .sort((a, b) => b.k - a.k || b.m - a.m)[0];
   if (!cand) {
-    console.log('AVISO: no se encontro ningun INF-09*.xlsx en baremosTigo -- el portal se genera sin productividad.');
+    console.log('AVISO: no se encontro ningun INF-*.xlsx en baremosTigo -- el portal se genera sin productividad.');
     return null;
   }
   try {
