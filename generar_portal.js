@@ -1144,6 +1144,20 @@ function mostrarPerfil(t) {
   } catch (err) { /* localStorage puede fallar en modo privado; no es critico */ }
 }
 
+// Registro de ingresos (lo ven el administrador y los supervisores en el Portal
+// Supervisor). Silencioso: si falla, el tecnico no nota nada.
+const SUPA_URL = 'https://enoclwynrxaizjgvqhim.supabase.co';
+const SUPA_KEY = 'sb_publishable_aoJKG0x8aVtY6GSyWIwfCw_awWdTKKN';
+function registrarIngreso(key) {
+  try {
+    fetch(SUPA_URL + '/rest/v1/rpc/registrar_tecnico', {
+      method: 'POST', keepalive: true,
+      headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_id: key }),
+    }).catch(function () {});
+  } catch (e) { /* navegador sin fetch */ }
+}
+
 function intentarLogin() {
   const key = normalizarTexto(document.getElementById('inputNombre').value);
   const pass = (document.getElementById('inputPass').value || '').trim().toUpperCase();
@@ -1156,6 +1170,7 @@ function intentarLogin() {
   }
   errorBox.style.display = 'none';
   sessionStorage.setItem('portalTecnicoKey', key);
+  registrarIngreso(key);
   mostrarPerfil(t);
 }
 
